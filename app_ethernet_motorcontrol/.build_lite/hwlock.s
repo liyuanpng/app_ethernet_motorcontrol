@@ -1,4 +1,4 @@
-	.file	"/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_locks/src/hwlock.c"
+	.file	"/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_locks/src/hwlock.c"
 
 .set hwlock_alloc.locnoside, 1
 
@@ -41,8 +41,8 @@
 .set hwlock_release.locnonotificationselect, 1
 
 
-	.file	1 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_locks/src/hwlock.c"
-	.file	2 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_locks/src/hwlock.h"
+	.file	1 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_locks/src/hwlock.c"
+	.file	2 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_locks/src/hwlock.h"
 	.section	.debug_info,"",@progbits
 .Lsection_info:
 	.section	.debug_abbrev,"",@progbits
@@ -205,7 +205,7 @@ hwlock_release:
 .Lsection_end1:
 	.section	.debug_info,"",@progbits
 .Linfo_begin1:
-	.long	530
+	.long	557
 	.short	2
 	.long	.Labbrev_begin
 	.byte	4
@@ -213,11 +213,11 @@ hwlock_release:
 	.ascii	 "4.2.1 (LLVM build) XMOS Community_13.2.3 (build 17312)"
 	.byte	0
 	.short	1
-	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_locks/src/hwlock.c"
+	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_locks/src/hwlock.c"
 	.byte	0
 	.long	0
 	.long	.Lsection_line
-	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/app_ethernet_led/.build_lite"
+	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/app_ethernet_motorcontrol/.build_lite"
 	.byte	0
 	.byte	1
 	.byte	2
@@ -228,7 +228,7 @@ hwlock_release:
 	.byte	2
 	.byte	30
 	.byte	1
-	.long	334
+	.long	361
 	.byte	1
 	.long	.Lfunc_begin0
 	.long	.Lfunc_end0
@@ -243,7 +243,7 @@ hwlock_release:
 	.byte	0
 	.byte	2
 	.byte	31
-	.long	334
+	.long	361
 	.long	.Ldebug_loc0+0
 	.byte	0
 	.byte	0
@@ -253,7 +253,7 @@ hwlock_release:
 	.byte	7
 	.byte	4
 	.byte	6
-	.long	318
+	.long	345
 	.ascii	 "hwlock_t"
 	.byte	0
 	.byte	2
@@ -277,7 +277,7 @@ hwlock_release:
 	.byte	0
 	.byte	2
 	.byte	45
-	.long	334
+	.long	361
 	.long	.Ldebug_loc2+0
 	.byte	0
 	.byte	7
@@ -299,7 +299,7 @@ hwlock_release:
 	.byte	0
 	.byte	2
 	.byte	60
-	.long	334
+	.long	361
 	.long	.Ldebug_loc4+0
 	.byte	0
 	.byte	7
@@ -321,7 +321,7 @@ hwlock_release:
 	.byte	0
 	.byte	2
 	.byte	75
-	.long	334
+	.long	361
 	.long	.Ldebug_loc6+0
 	.byte	0
 	.byte	0
@@ -472,13 +472,13 @@ hwlock_release:
 	.long	.Linfo_begin1
 .Lset1 = .Linfo_end1-.Linfo_begin1
 	.long	.Lset1
-	.long	407
+	.long	434
 .asciiz "hwlock_acquire"
-	.long	245
+	.long	272
 .asciiz "hwlock_alloc"
-	.long	470
+	.long	497
 .asciiz "hwlock_release"
-	.long	350
+	.long	377
 .asciiz "hwlock_free"
 	.long	0
 .Lpubnames_end1:

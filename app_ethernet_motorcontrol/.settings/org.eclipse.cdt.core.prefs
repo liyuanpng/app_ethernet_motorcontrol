@@ -1,7 +1,17 @@
-#Mon Oct 12 10:44:59 CEST 2015
+#Mon Oct 12 15:57:52 CEST 2015
 eclipse.preferences.version=1
 environment/project/com.xmos.cdt.toolchain.1187374847/XMOS_MODULE_PATH/delimiter=\:
 environment/project/com.xmos.cdt.toolchain.1187374847/XMOS_MODULE_PATH/operation=append
-environment/project/com.xmos.cdt.toolchain.1187374847/XMOS_MODULE_PATH/value=/home/hstroetgen/Dokumente/programming/ethercat/sc_sncn_ethernet/app_dual_ethernet_ping
+environment/project/com.xmos.cdt.toolchain.1187374847/XMOS_MODULE_PATH/value=/home/hstroetgen/Dokumente/programming/milling_machine_motor_control/app_demo_bldc_variable_sensor_velocity
 environment/project/com.xmos.cdt.toolchain.1187374847/append=true
 environment/project/com.xmos.cdt.toolchain.1187374847/appendContributed=true
+environment/project/com.xmos.cdt.toolchain.1230220969/XMOS_MODULE_PATH/delimiter=\:
+environment/project/com.xmos.cdt.toolchain.1230220969/XMOS_MODULE_PATH/operation=append
+environment/project/com.xmos.cdt.toolchain.1230220969/XMOS_MODULE_PATH/value=/home/hstroetgen/Dokumente/programming/milling_machine_motor_control/app_demo_bldc_variable_sensor_velocity
+environment/project/com.xmos.cdt.toolchain.1230220969/append=true
+environment/project/com.xmos.cdt.toolchain.1230220969/appendContributed=true
+environment/project/com.xmos.cdt.toolchain.2097618560/XMOS_MODULE_PATH/delimiter=\:
+environment/project/com.xmos.cdt.toolchain.2097618560/XMOS_MODULE_PATH/operation=append
+environment/project/com.xmos.cdt.toolchain.2097618560/XMOS_MODULE_PATH/value=/home/hstroetgen/Dokumente/programming/milling_machine_motor_control/app_demo_bldc_variable_sensor_velocity
+environment/project/com.xmos.cdt.toolchain.2097618560/append=true
+environment/project/com.xmos.cdt.toolchain.2097618560/appendContributed=true

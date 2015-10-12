@@ -43,7 +43,7 @@
 	.globpassesref usage.anon.0, ETHERTYPE_ARP,"../src/mac_filters.xc:16: error: call to `isEthertype' in `isARP' makes alias of global 'ETHERTYPE_ARP'"
 
 
-	.file	1 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/app_ethernet_led/.build_lite/../src/mac_filters.xc"
+	.file	1 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/app_ethernet_motorcontrol/.build_lite/../src/mac_filters.xc"
 	.section	.debug_info,"",@progbits
 .Lsection_info:
 	.section	.debug_abbrev,"",@progbits
@@ -587,7 +587,7 @@ ETHERTYPE_SNCN:
 .Lsection_end1:
 	.section	.debug_info,"",@progbits
 .Linfo_begin1:
-	.long	954
+	.long	972
 	.short	2
 	.long	.Labbrev_begin
 	.byte	4
@@ -599,7 +599,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.long	0
 	.long	.Lsection_line
-	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/app_ethernet_led/.build_lite"
+	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/app_ethernet_motorcontrol/.build_lite"
 	.byte	0
 	.byte	1
 	.byte	2
@@ -611,9 +611,9 @@ ETHERTYPE_SNCN:
 	.byte	4
 	.byte	5
 	.byte	4
-	.long	198
+	.long	216
 	.byte	5
-	.long	215
+	.long	233
 	.byte	1
 	.byte	0
 	.byte	6
@@ -621,7 +621,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.ascii	 "ETHERTYPE_IPV4"
 	.byte	0
-	.long	218
+	.long	236
 	.byte	1
 	.byte	1
 	.byte	3
@@ -633,7 +633,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.ascii	 "ETHERTYPE_IPV6"
 	.byte	0
-	.long	218
+	.long	236
 	.byte	1
 	.byte	1
 	.byte	4
@@ -645,7 +645,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.ascii	 "ETHERTYPE_ARP"
 	.byte	0
-	.long	218
+	.long	236
 	.byte	1
 	.byte	1
 	.byte	5
@@ -657,7 +657,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.ascii	 "ETHERTYPE_PROFINET"
 	.byte	0
-	.long	218
+	.long	236
 	.byte	1
 	.byte	1
 	.byte	6
@@ -669,7 +669,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.ascii	 "ETHERTYPE_SNCN"
 	.byte	0
-	.long	218
+	.long	236
 	.byte	1
 	.byte	1
 	.byte	8
@@ -683,20 +683,20 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	10
-	.long	526
+	.long	544
 	.byte	1
 	.byte	8
 	.ascii	 "data"
 	.byte	0
 	.byte	1
 	.byte	10
-	.long	930
+	.long	948
 	.byte	8
 	.ascii	 "type"
 	.byte	0
 	.byte	1
 	.byte	10
-	.long	930
+	.long	948
 	.byte	9
 	.byte	9
 	.byte	10
@@ -704,7 +704,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	11
-	.long	935
+	.long	953
 	.byte	0
 	.byte	0
 	.byte	0
@@ -720,7 +720,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	15
-	.long	526
+	.long	544
 	.byte	1
 	.long	.Lfunc_begin2
 	.long	.Lfunc_end2
@@ -732,7 +732,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	15
-	.long	930
+	.long	948
 	.long	.Ldebug_loc10+0
 	.byte	0
 	.byte	11
@@ -742,7 +742,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	19
-	.long	526
+	.long	544
 	.byte	1
 	.long	.Lfunc_begin3
 	.long	.Lfunc_end3
@@ -754,7 +754,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	19
-	.long	930
+	.long	948
 	.long	.Ldebug_loc14+0
 	.byte	0
 	.byte	11
@@ -764,7 +764,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	23
-	.long	526
+	.long	544
 	.byte	1
 	.long	.Lfunc_begin4
 	.long	.Lfunc_end4
@@ -776,7 +776,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	23
-	.long	930
+	.long	948
 	.long	.Ldebug_loc18+0
 	.byte	0
 	.byte	11
@@ -786,7 +786,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	28
-	.long	526
+	.long	544
 	.byte	1
 	.long	.Lfunc_begin5
 	.long	.Lfunc_end5
@@ -798,7 +798,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	27
-	.long	930
+	.long	948
 	.long	.Ldebug_loc22+0
 	.byte	0
 	.byte	11
@@ -808,7 +808,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	33
-	.long	526
+	.long	544
 	.byte	1
 	.long	.Lfunc_begin0
 	.long	.Lfunc_end0
@@ -820,7 +820,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	32
-	.long	930
+	.long	948
 	.long	.Ldebug_loc0+0
 	.byte	13
 	.long	.Ltmp9
@@ -833,7 +833,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	34
-	.long	935
+	.long	953
 	.byte	0
 	.byte	0
 	.byte	0
@@ -844,7 +844,7 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	43
-	.long	526
+	.long	544
 	.byte	1
 	.long	.Lfunc_begin1
 	.long	.Lfunc_end1
@@ -856,14 +856,14 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	43
-	.long	930
+	.long	948
 	.long	.Ldebug_loc4+0
 	.byte	12
 	.ascii	 "mac"
 	.byte	0
 	.byte	1
 	.byte	43
-	.long	952
+	.long	970
 	.long	.Ldebug_loc7+0
 	.byte	13
 	.long	.Ltmp25
@@ -876,25 +876,25 @@ ETHERTYPE_SNCN:
 	.byte	0
 	.byte	1
 	.byte	45
-	.long	935
+	.long	953
 	.byte	0
 	.byte	0
 	.byte	0
 	.byte	14
-	.long	198
+	.long	216
 	.byte	15
-	.long	925
+	.long	943
 	.byte	2
 	.ascii	 "int"
 	.byte	0
 	.byte	5
 	.byte	4
 	.byte	16
-	.long	198
+	.long	216
 	.byte	14
-	.long	942
+	.long	960
 	.byte	15
-	.long	947
+	.long	965
 	.byte	0
 .Linfo_end1:
 	.section	.debug_abbrev,"",@progbits
@@ -1101,29 +1101,29 @@ ETHERTYPE_SNCN:
 	.long	.Linfo_begin1
 .Lset1 = .Linfo_end1-.Linfo_begin1
 	.long	.Lset1
-	.long	360
+	.long	378
 .asciiz "ETHERTYPE_PROFINET"
-	.long	640
+	.long	658
 .asciiz "isIPV6"
-	.long	590
+	.long	608
 .asciiz "isIPV4"
-	.long	690
+	.long	708
 .asciiz "isSNCN"
-	.long	740
+	.long	758
 .asciiz "isBroadcast"
-	.long	456
+	.long	474
 .asciiz "isEthertype"
-	.long	829
+	.long	847
 .asciiz "isForMe"
-	.long	412
+	.long	430
 .asciiz "ETHERTYPE_SNCN"
-	.long	230
+	.long	248
 .asciiz "ETHERTYPE_IPV4"
-	.long	318
+	.long	336
 .asciiz "ETHERTYPE_ARP"
-	.long	274
+	.long	292
 .asciiz "ETHERTYPE_IPV6"
-	.long	542
+	.long	560
 .asciiz "isARP"
 	.long	0
 .Lpubnames_end1:
@@ -1263,7 +1263,7 @@ ETHERTYPE_SNCN:
 .Lentries_start0:
 	.long	.Lentries_end1-.Lentries_start0
 	.long	0
-	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/app_ethernet_led/.build_lite"
+	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/app_ethernet_motorcontrol/.build_lite"
 	.byte	0
 .cc_top cc_0,.Lxtalabel9
 	.ascii	 "../src/mac_filters.xc"
@@ -1375,7 +1375,7 @@ ETHERTYPE_SNCN:
 .Lentries_start2:
 	.long	.Lentries_end3-.Lentries_start2
 	.long	0
-	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/app_ethernet_led/.build_lite"
+	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/app_ethernet_motorcontrol/.build_lite"
 	.byte	0
 .cc_top cc_15,.Lxta.loop_labels0
 	.ascii	 "../src/mac_filters.xc"

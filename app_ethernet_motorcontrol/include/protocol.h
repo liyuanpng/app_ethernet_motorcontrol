@@ -12,9 +12,9 @@
 #define TX_SIZE 60
 #define OFFSET_PAYLOAD 14
 
-interface if_led
+interface if_motor
 {
-    int msg(char led_cmd, char led_num);
+    int msg(char motor_cmd, char motor_num, int motor_speed, int motor_torque);
 };
 
 interface if_addr
@@ -22,7 +22,7 @@ interface if_addr
     void msg(char address[], int reply);
 };
 
-void protocol(chanend dataFromP1, chanend dataFromP2, client interface if_led led, client interface if_addr addr);
+void protocol(chanend dataFromP1, chanend dataFromP2, client interface if_motor motor, client interface if_addr addr);
 void send(chanend dataToP1, chanend dataToP2, server interface if_addr addr);
 
 #endif /* PROTOCOL_H_ */

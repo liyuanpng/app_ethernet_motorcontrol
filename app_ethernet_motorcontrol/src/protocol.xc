@@ -27,7 +27,7 @@
  *  @param[in,out]  led      Interface client for LED communication with led_server().
  *  @param[out]     addr     Interface client for address communication with send().
  */
-void filter(char data[], int nBytes, client interface if_led led, client interface if_addr addr)
+void protocol_filter(char data[], int nBytes, client interface if_motor motor, client interface if_addr addr)
 {
     int reply;
 
@@ -101,7 +101,7 @@ void send(chanend dataToP1, chanend dataToP2, server interface if_addr addr)
  *  @param[in,out]  led      Interface client for LED communication with led_server().
  *  @param[out]     addr     Interface client for address communication with send().
  */
-void protocol(chanend dataFromP1, chanend dataFromP2, client interface if_led led, client interface if_addr addr)
+void protocol(chanend dataFromP1, chanend dataFromP2, client interface if_motor motor, client interface if_addr addr)
 {
     int nbytes;
     unsigned rxbuffer[400];
@@ -117,7 +117,7 @@ void protocol(chanend dataFromP1, chanend dataFromP2, client interface if_led le
                            break;
        }
 
-       filter((rxbuffer, char[]), nbytes, led, addr);
+       protocol_filter((rxbuffer, char[]), nbytes, motor, addr);
 
     }
 }

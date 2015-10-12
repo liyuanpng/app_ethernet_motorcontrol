@@ -1,4 +1,4 @@
-	.file	"/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/lite_p1/mii_client_lite_support_p1.c"
+	.file	"/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/lite_p1/mii_client_lite_support_p1.c"
 
 .set _mac_set_macaddr_lite.locnoside, 1
 
@@ -21,7 +21,7 @@
 .set _mac_get_macaddr_lite.locnonotificationselect, 1
 
 
-	.file	1 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/lite_p1/mii_client_lite_support_p1.c"
+	.file	1 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/lite_p1/mii_client_lite_support_p1.c"
 	.section	.debug_info,"",@progbits
 .Lsection_info:
 	.section	.debug_abbrev,"",@progbits
@@ -154,7 +154,7 @@ _mac_s_macaddr:
 .Lsection_end1:
 	.section	.debug_info,"",@progbits
 .Linfo_begin1:
-	.long	629
+	.long	656
 	.short	2
 	.long	.Labbrev_begin
 	.byte	4
@@ -162,11 +162,11 @@ _mac_s_macaddr:
 	.ascii	 "4.2.1 (LLVM build) XMOS Community_13.2.3 (build 17312)"
 	.byte	0
 	.short	1
-	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/lite_p1/mii_client_lite_support_p1.c"
+	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/lite_p1/mii_client_lite_support_p1.c"
 	.byte	0
 	.long	0
 	.long	.Lsection_line
-	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/app_ethernet_led/.build_lite"
+	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/app_ethernet_motorcontrol/.build_lite"
 	.byte	0
 	.byte	1
 	.byte	2
@@ -178,15 +178,15 @@ _mac_s_macaddr:
 	.byte	4
 	.byte	5
 	.byte	4
-	.long	281
+	.long	308
 	.byte	5
-	.long	298
+	.long	325
 	.byte	5
 	.byte	0
 	.byte	6
 	.ascii	 "_mac_s_macaddr"
 	.byte	0
-	.long	301
+	.long	328
 	.byte	1
 	.byte	7
 	.byte	5
@@ -211,7 +211,7 @@ _mac_s_macaddr:
 	.byte	0
 	.byte	1
 	.byte	9
-	.long	595
+	.long	622
 	.long	.Ldebug_loc0+0
 	.byte	9
 	.long	.Ltmp1
@@ -224,7 +224,7 @@ _mac_s_macaddr:
 	.byte	0
 	.byte	1
 	.byte	10
-	.long	588
+	.long	615
 	.long	.Ldebug_loc3+0
 	.byte	0
 	.byte	0
@@ -237,7 +237,7 @@ _mac_s_macaddr:
 	.byte	1
 	.byte	13
 	.byte	1
-	.long	588
+	.long	615
 	.byte	1
 	.long	.Lfunc_begin1
 	.long	.Lfunc_end1
@@ -249,14 +249,14 @@ _mac_s_macaddr:
 	.byte	0
 	.byte	1
 	.byte	13
-	.long	617
+	.long	644
 	.long	.Ldebug_loc6+0
 	.byte	8
 	.ascii	 "macaddr"
 	.byte	0
 	.byte	1
 	.byte	13
-	.long	595
+	.long	622
 	.long	.Ldebug_loc11+0
 	.byte	9
 	.long	.Ltmp9
@@ -269,7 +269,7 @@ _mac_s_macaddr:
 	.byte	0
 	.byte	1
 	.byte	16
-	.long	588
+	.long	615
 	.long	.Ldebug_loc14+0
 	.byte	0
 	.byte	0
@@ -280,7 +280,7 @@ _mac_s_macaddr:
 	.byte	5
 	.byte	4
 	.byte	12
-	.long	281
+	.long	308
 	.byte	4
 	.byte	2
 	.ascii	 "unsigned int"
@@ -288,7 +288,7 @@ _mac_s_macaddr:
 	.byte	7
 	.byte	4
 	.byte	13
-	.long	601
+	.long	628
 	.ascii	 "chanend"
 	.byte	0
 	.byte	2
@@ -490,9 +490,9 @@ _mac_s_macaddr:
 	.long	.Linfo_begin1
 .Lset1 = .Linfo_end1-.Linfo_begin1
 	.long	.Lset1
-	.long	341
+	.long	368
 .asciiz "_mac_set_macaddr_lite"
-	.long	454
+	.long	481
 .asciiz "_mac_get_macaddr_lite"
 	.long	0
 .Lpubnames_end1:

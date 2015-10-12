@@ -5,7 +5,7 @@
 
 /*
  * Platform description header file.
- * Automatically generated from "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_board-support/targets/SOMANET-C22.xn".
+ * Automatically generated from "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_board-support/targets/SOMANET-C22.xn".
  */
 
 #ifdef __XC__

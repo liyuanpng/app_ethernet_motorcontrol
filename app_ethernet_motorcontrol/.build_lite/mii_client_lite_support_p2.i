@@ -1,8 +1,8 @@
-# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/lite_p2/mii_client_lite_support_p2.c"
-# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/app_ethernet_led/.build_lite//"
+# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/lite_p2/mii_client_lite_support_p2.c"
+# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/app_ethernet_motorcontrol/.build_lite//"
 # 1 "<built-in>"
 # 1 "<command-line>"
-# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/lite_p2/mii_client_lite_support_p2.c"
+# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/lite_p2/mii_client_lite_support_p2.c"
 # 1 "/opt/XMOS/xTIMEcomposer/Community_13.2.3/target/include/xs1.h" 1 3 4
 # 19 "/opt/XMOS/xTIMEcomposer/Community_13.2.3/target/include/xs1.h" 3 4
 # 1 "/opt/XMOS/xTIMEcomposer/Community_13.2.3/target/include/timer.h" 1 3 4
@@ -99,7 +99,7 @@ __attribute__((deprecated)) static inline unsigned get_core_id(void) {
 __attribute__((deprecated)) static inline unsigned get_thread_id(void) {
   return __builtin_getid();
 }
-# 2 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/lite_p2/mii_client_lite_support_p2.c" 2
+# 2 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/lite_p2/mii_client_lite_support_p2.c" 2
 # 1 "/opt/XMOS/xTIMEcomposer/Community_13.2.3/target/include/xccompat.h" 1 3 4
 # 122 "/opt/XMOS/xTIMEcomposer/Community_13.2.3/target/include/xccompat.h" 3 4
 typedef unsigned chanend;
@@ -173,17 +173,17 @@ typedef unsigned out_buffered_port_16_t;
 
 
 typedef unsigned out_buffered_port_32_t;
-# 3 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/lite_p2/mii_client_lite_support_p2.c" 2
-# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/common/ethernet_conf_derived.h" 1
+# 3 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/lite_p2/mii_client_lite_support_p2.c" 2
+# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/common/ethernet_conf_derived.h" 1
        
 
 # 1 "/opt/XMOS/xTIMEcomposer/Community_13.2.3/target/include/platform.h" 1 3 4
 # 21 "/opt/XMOS/xTIMEcomposer/Community_13.2.3/target/include/platform.h" 3 4
-# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/app_ethernet_led/.build_lite/SOMANET-C22.h" 1 3 4
+# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/app_ethernet_motorcontrol/.build_lite/SOMANET-C22.h" 1 3 4
 # 22 "/opt/XMOS/xTIMEcomposer/Community_13.2.3/target/include/platform.h" 2 3 4
-# 4 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/common/ethernet_conf_derived.h" 2
-# 4 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/lite_p2/mii_client_lite_support_p2.c" 2
-# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/include_p2/ethernet_rx_client_p2.h" 1
+# 4 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/common/ethernet_conf_derived.h" 2
+# 4 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/lite_p2/mii_client_lite_support_p2.c" 2
+# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/include_p2/ethernet_rx_client_p2.h" 1
 
 
 
@@ -192,44 +192,44 @@ typedef unsigned out_buffered_port_32_t;
        
 
 
-# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/include_p2/ethernet_rx_client_lite_p2.h" 1
-# 18 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/include_p2/ethernet_rx_client_lite_p2.h"
+# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/include_p2/ethernet_rx_client_lite_p2.h" 1
+# 18 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/include_p2/ethernet_rx_client_lite_p2.h"
        
-# 48 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/include_p2/ethernet_rx_client_lite_p2.h"
+# 48 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/include_p2/ethernet_rx_client_lite_p2.h"
 void mac_rx_p2_lite(chanend c_mac,
                  unsigned char buffer[],
                  unsigned int *len,
                  unsigned int *src_port);
-# 73 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/include_p2/ethernet_rx_client_lite_p2.h"
+# 73 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/include_p2/ethernet_rx_client_lite_p2.h"
 void safe_mac_rx_lite(chanend c_mac,
                       unsigned char buffer[],
                       unsigned int *len,
                       unsigned int *src_port,
                       int n);
-# 10 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/include_p2/ethernet_rx_client_p2.h" 2
-# 33 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/include_p2/ethernet_rx_client_p2.h"
+# 10 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/include_p2/ethernet_rx_client_p2.h" 2
+# 33 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/include_p2/ethernet_rx_client_p2.h"
 void safe_mac_rx(chanend c_mac,
                  unsigned char buffer[],
                  unsigned int *len,
                  unsigned int *src_port,
                  int n);
-# 5 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/lite_p2/mii_client_lite_support_p2.c" 2
-# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/include_p2/ethernet_tx_client_p2.h" 1
-# 17 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/include_p2/ethernet_tx_client_p2.h"
+# 5 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/lite_p2/mii_client_lite_support_p2.c" 2
+# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/include_p2/ethernet_tx_client_p2.h" 1
+# 17 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/include_p2/ethernet_tx_client_p2.h"
        
 
 
-# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/include_p2/ethernet_tx_client_lite_p2.h" 1
-# 17 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/include_p2/ethernet_tx_client_lite_p2.h"
+# 1 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/include_p2/ethernet_tx_client_lite_p2.h" 1
+# 17 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/include_p2/ethernet_tx_client_lite_p2.h"
        
-# 35 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/include_p2/ethernet_tx_client_lite_p2.h"
+# 35 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/include_p2/ethernet_tx_client_lite_p2.h"
 void mac_tx_p2_lite(chanend c_mac, unsigned int buffer[], int nbytes, int ifnum);
-# 49 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/include_p2/ethernet_tx_client_lite_p2.h"
+# 49 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/include_p2/ethernet_tx_client_lite_p2.h"
 int mac_get_macaddr_lite(chanend c_mac, unsigned char macaddr[]);
-# 21 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/include_p2/ethernet_tx_client_p2.h" 2
-# 33 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/include_p2/ethernet_tx_client_p2.h"
+# 21 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/include_p2/ethernet_tx_client_p2.h" 2
+# 33 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/include_p2/ethernet_tx_client_p2.h"
 int mac_get_macaddr(chanend c_mac, unsigned char macaddr[]);
-# 6 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_ethernet_dual/src/lite_p2/mii_client_lite_support_p2.c" 2
+# 6 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_ethernet_dual/src/lite_p2/mii_client_lite_support_p2.c" 2
 
 static unsigned char mac_s_macaddr[6];
 

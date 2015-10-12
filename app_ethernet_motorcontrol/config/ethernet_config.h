@@ -1,7 +1,7 @@
 #pragma once
 
 // ########### CHANGE ONLY THIS MACRO ############
-#define NODE    2
+#define NODE    7
 
 //IP ADDRESSES
 // NOTE: YOU MAY NEED TO REDEFINE THIS TO AN IP ADDRESS THAT WORKS
@@ -53,8 +53,9 @@ static const unsigned char MAC_P2_NODE_6[6] = {0xCA, 0xFE, 0xCA, 0xFE, 0xCA, 0x9
 static const unsigned char MAC_P1_NODE_7[6] = {0xF0, 0xCA, 0xF0, 0xCA, 0xF0, 0x92};
 static const unsigned char MAC_P2_NODE_7[6] = {0xCA, 0xFE, 0xCA, 0xFE, 0xCA, 0x93};
 
-// The next lines are just a joke. If you want to concat a #define macro with a string,
-// you have to connect two functions (CONCAT1 and CONCAT2). With only one function it will not work...
+// The next lines are just a joke. If you want to concat a #define macro (e.g. a number) with a string,
+// you have to connect two functions (CONCAT1 and CONCAT2). With only one function it will not work.
+// It will just concat the define-macro-name with the string.
 #define CONCAT2(name, node) (name ## _ ## node)
 #define CONCAT1(name, node) CONCAT2(name, node)
 

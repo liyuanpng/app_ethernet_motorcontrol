@@ -1,4 +1,4 @@
-	.file	"/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_locks/src/swlock.c"
+	.file	"/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_locks/src/swlock.c"
 
 .set swlock_init.locnoside, 1
 
@@ -31,7 +31,7 @@
 .set swlock_acquire.locnonotificationselect, 1
 
 
-	.file	1 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_locks/src/swlock.c"
+	.file	1 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_locks/src/swlock.c"
 	.section	.debug_info,"",@progbits
 .Lsection_info:
 	.section	.debug_abbrev,"",@progbits
@@ -72,7 +72,7 @@ swlock_init:
 .Ltmp3:
 	.size	swlock_init, .Ltmp3-swlock_init
 .Lfunc_end0:
-	.file	2 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_locks/src/swlock.h"
+	.file	2 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_locks/src/swlock.h"
 .Ltmp4:
 	.cfi_endproc
 .Leh_func_end0:
@@ -178,7 +178,7 @@ swlock_acquire:
 .Lsection_end1:
 	.section	.debug_info,"",@progbits
 .Linfo_begin1:
-	.long	524
+	.long	551
 	.short	2
 	.long	.Labbrev_begin
 	.byte	4
@@ -186,11 +186,11 @@ swlock_acquire:
 	.ascii	 "4.2.1 (LLVM build) XMOS Community_13.2.3 (build 17312)"
 	.byte	0
 	.short	1
-	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/module_locks/src/swlock.c"
+	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/module_locks/src/swlock.c"
 	.byte	0
 	.long	0
 	.long	.Lsection_line
-	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_led/app_ethernet_led/.build_lite"
+	.ascii	 "/home/hstroetgen/Dokumente/programming/app_ethernet_motorcontrol/app_ethernet_motorcontrol/.build_lite"
 	.byte	0
 	.byte	1
 	.byte	2
@@ -212,7 +212,7 @@ swlock_acquire:
 	.byte	0
 	.byte	1
 	.byte	9
-	.long	514
+	.long	541
 	.long	.Ldebug_loc0+0
 	.byte	4
 	.long	.Ltmp1
@@ -222,7 +222,7 @@ swlock_acquire:
 	.byte	0
 	.byte	1
 	.byte	11
-	.long	514
+	.long	541
 	.long	.Ldebug_loc2+0
 	.byte	0
 	.byte	0
@@ -245,7 +245,7 @@ swlock_acquire:
 	.byte	0
 	.byte	1
 	.byte	26
-	.long	514
+	.long	541
 	.long	.Ldebug_loc4+0
 	.byte	0
 	.byte	2
@@ -267,7 +267,7 @@ swlock_acquire:
 	.byte	0
 	.byte	1
 	.byte	17
-	.long	514
+	.long	541
 	.long	.Ldebug_loc6+0
 	.byte	4
 	.long	.Ltmp17
@@ -277,7 +277,7 @@ swlock_acquire:
 	.byte	0
 	.byte	1
 	.byte	19
-	.long	520
+	.long	547
 	.long	.Ldebug_loc10+0
 	.byte	0
 	.byte	0
@@ -287,13 +287,13 @@ swlock_acquire:
 	.byte	7
 	.byte	4
 	.byte	7
-	.long	482
+	.long	509
 	.ascii	 "swlock_t"
 	.byte	0
 	.byte	2
 	.byte	23
 	.byte	8
-	.long	498
+	.long	525
 	.byte	4
 	.byte	6
 	.ascii	 "int"
@@ -430,11 +430,11 @@ swlock_acquire:
 	.long	.Linfo_begin1
 .Lset1 = .Linfo_end1-.Linfo_begin1
 	.long	.Lset1
-	.long	329
+	.long	356
 .asciiz "swlock_release"
-	.long	245
+	.long	272
 .asciiz "swlock_init"
-	.long	392
+	.long	419
 .asciiz "swlock_acquire"
 	.long	0
 .Lpubnames_end1:
