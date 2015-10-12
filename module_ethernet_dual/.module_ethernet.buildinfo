@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<allbuildresults>
+<buildresults component="module_ethernet" packagename="xm-local-sc_ethernet(2.2.3rc0)" packageversion="2.2.3rc0" toolsversion="latest">
+<buildresult>
+<configuration>
+<parameter id="mac_type" value="full"/>
+<parameter id="rx_buf_size" value="512"/>
+<parameter id="tx_buf_size" value="512"/>
+<parameter id="num_rx_clients" value="1"/>
+<parameter id="num_tx_clients" value="1"/>
+<parameter id="combine_smi_ports" value="false"/>
+<parameter id="use_reset" value="true"/>
+</configuration>
+<resourceusage>
+<resourceusageitem id="cores" value="5"/>
+<resourceusageitem id="memory" value="0"/>
+<resourceusageitem id="codememory" value="5176"/>
+<resourceusageitem id="datamemory" value="2136"/>
+<resourceusageitem id="ports1bit" value="8"/>
+<resourceusageitem id="ports4bit" value="2"/>
+<resourceusageitem id="ports8bit" value="1"/>
+<resourceusageitem id="ports16bit" value="0"/>
+<resourceusageitem id="ports32bit" value="0"/>
+<resourceusageitem id="clocks" value="2"/>
+<resourceusageitem id="chanends" value="4"/>
+<resourceusageitem id="timers" value="3"/>
+</resourceusage>
+</buildresult>
+<buildresult>
+<configuration>
+<parameter id="mac_type" value="full"/>
+<parameter id="rx_buf_size" value="512"/>
+<parameter id="tx_buf_size" value="30000"/>
+<parameter id="num_rx_clients" value="1"/>
+<parameter id="num_tx_clients" value="1"/>
+<parameter id="combine_smi_ports" value="false"/>
+<parameter id="use_reset" value="true"/>
+</configuration>
+<resourceusage>
+<resourceusageitem id="cores" value="5"/>
+<resourceusageitem id="memory" value="0"/>
+<resourceusageitem id="codememory" value="5172"/>
+<resourceusageitem id="datamemory" value="31624"/>
+<resourceusageitem id="ports1bit" value="8"/>
+<resourceusageitem id="ports4bit" value="2"/>
+<resourceusageitem id="ports8bit" value="1"/>
+<resourceusageitem id="ports16bit" value="0"/>
+<resourceusageitem id="ports32bit" value="0"/>
+<resourceusageitem id="clocks" value="2"/>
+<resourceusageitem id="chanends" value="4"/>
+<resourceusageitem id="timers" value="3"/>
+</resourceusage>
+</buildresult>
+<buildresult>
+<configuration>
+<parameter id="mac_type" value="full"/>
+<parameter id="rx_buf_size" value="30000"/>
+<parameter id="tx_buf_size" value="512"/>
+<parameter id="num_rx_clients" value="1"/>
+<parameter id="num_tx_clients" value="1"/>
+<parameter id="combine_smi_ports" value="false"/>
+<parameter id="use_reset" value="true"/>
+</configuration>
+<resourceusage>
+<resourceusageitem id="cores" value="5"/>
+<resourceusageitem id="memory" value="0"/>
+<resourceusageitem id="codememory" value="5172"/>
+<resourceusageitem id="datamemory" value="31624"/>
+<resourceusageitem id="ports1bit" value="8"/>
+<resourceusageitem id="ports4bit" value="2"/>
+<resourceusageitem id="ports8bit" value="1"/>
+<resourceusageitem id="ports16bit" value="0"/>
+<resourceusageitem id="ports32bit" value="0"/>
+<resourceusageitem id="clocks" value="2"/>
+<resourceusageitem id="chanends" value="4"/>
+<resourceusageitem id="timers" value="3"/>
+</resourceusage>
+</buildresult>
+<buildresult>
+<configuration>
+<parameter id="mac_type" value="full"/>
+<parameter id="rx_buf_size" value="30000"/>
+<parameter id="tx_buf_size" value="30000"/>
+<parameter id="num_rx_clients" value="1"/>
+<parameter id="num_tx_clients" value="1"/>
+<parameter id="combine_smi_ports" value="false"/>
+<parameter id="use_reset" value="true"/>
+</configuration>
+<resourceusage>
+<resourceusageitem id="cores" value="5"/>
+<resourceusageitem id="memory" value="0"/>
+<resourceusageitem id="codememory" value="5176"/>
+<resourceusageitem id="datamemory" value="61112"/>
+<resourceusageitem id="ports1bit" value="8"/>
+<resourceusageitem id="ports4bit" value="2"/>
+<resourceusageitem id="ports8bit" value="1"/>
+<resourceusageitem id="ports16bit" value="0"/>
+<resourceusageitem id="ports32bit" value="0"/>
+<resourceusageitem id="clocks" value="2"/>
+<resourceusageitem id="chanends" value="4"/>
+<resourceusageitem id="timers" value="3"/>
+</resourceusage>
+</buildresult>
+<buildresult>
+<configuration>
+<parameter id="mac_type" value="lite"/>
+<parameter id="rx_buf_size" value="512"/>
+<parameter id="tx_buf_size" value="512"/>
+<parameter id="num_rx_clients" value="1"/>
+<parameter id="num_tx_clients" value="1"/>
+<parameter id="combine_smi_ports" value="false"/>
+<parameter id="use_reset" value="true"/>
+</configuration>
+<resourceusage>
+<resourceusageitem id="cores" value="2"/>
+<resourceusageitem id="memory" value="0"/>
+<resourceusageitem id="codememory" value="3346"/>
+<resourceusageitem id="datamemory" value="3758"/>
+<resourceusageitem id="ports1bit" value="8"/>
+<resourceusageitem id="ports4bit" value="2"/>
+<resourceusageitem id="ports8bit" value="1"/>
+<resourceusageitem id="ports16bit" value="0"/>
+<resourceusageitem id="ports32bit" value="0"/>
+<resourceusageitem id="clocks" value="2"/>
+<resourceusageitem id="chanends" value="8"/>
+<resourceusageitem id="timers" value="2"/>
+</resourceusage>
+</buildresult>
+<buildresult>
+<configuration>
+<parameter id="mac_type" value="lite"/>
+<parameter id="rx_buf_size" value="512"/>
+<parameter id="tx_buf_size" value="30000"/>
+<parameter id="num_rx_clients" value="1"/>
+<parameter id="num_tx_clients" value="1"/>
+<parameter id="combine_smi_ports" value="false"/>
+<parameter id="use_reset" value="true"/>
+</configuration>
+<resourceusage>
+<resourceusageitem id="cores" value="2"/>
+<resourceusageitem id="memory" value="0"/>
+<resourceusageitem id="codememory" value="3346"/>
+<resourceusageitem id="datamemory" value="3758"/>
+<resourceusageitem id="ports1bit" value="8"/>
+<resourceusageitem id="ports4bit" value="2"/>
+<resourceusageitem id="ports8bit" value="1"/>
+<resourceusageitem id="ports16bit" value="0"/>
+<resourceusageitem id="ports32bit" value="0"/>
+<resourceusageitem id="clocks" value="2"/>
+<resourceusageitem id="chanends" value="8"/>
+<resourceusageitem id="timers" value="2"/>
+</resourceusage>
+</buildresult>
+<buildresult>
+<configuration>
+<parameter id="mac_type" value="lite"/>
+<parameter id="rx_buf_size" value="30000"/>
+<parameter id="tx_buf_size" value="512"/>
+<parameter id="num_rx_clients" value="1"/>
+<parameter id="num_tx_clients" value="1"/>
+<parameter id="combine_smi_ports" value="false"/>
+<parameter id="use_reset" value="true"/>
+</configuration>
+<resourceusage>
+<resourceusageitem id="cores" value="2"/>
+<resourceusageitem id="memory" value="0"/>
+<resourceusageitem id="codememory" value="3346"/>
+<resourceusageitem id="datamemory" value="62734"/>
+<resourceusageitem id="ports1bit" value="8"/>
+<resourceusageitem id="ports4bit" value="2"/>
+<resourceusageitem id="ports8bit" value="1"/>
+<resourceusageitem id="ports16bit" value="0"/>
+<resourceusageitem id="ports32bit" value="0"/>
+<resourceusageitem id="clocks" value="2"/>
+<resourceusageitem id="chanends" value="8"/>
+<resourceusageitem id="timers" value="2"/>
+</resourceusage>
+</buildresult>
+<buildresult>
+<configuration>
+<parameter id="mac_type" value="lite"/>
+<parameter id="rx_buf_size" value="30000"/>
+<parameter id="tx_buf_size" value="30000"/>
+<parameter id="num_rx_clients" value="1"/>
+<parameter id="num_tx_clients" value="1"/>
+<parameter id="combine_smi_ports" value="false"/>
+<parameter id="use_reset" value="true"/>
+</configuration>
+<resourceusage>
+<resourceusageitem id="cores" value="2"/>
+<resourceusageitem id="memory" value="0"/>
+<resourceusageitem id="codememory" value="3346"/>
+<resourceusageitem id="datamemory" value="62734"/>
+<resourceusageitem id="ports1bit" value="8"/>
+<resourceusageitem id="ports4bit" value="2"/>
+<resourceusageitem id="ports8bit" value="1"/>
+<resourceusageitem id="ports16bit" value="0"/>
+<resourceusageitem id="ports32bit" value="0"/>
+<resourceusageitem id="clocks" value="2"/>
+<resourceusageitem id="chanends" value="8"/>
+<resourceusageitem id="timers" value="2"/>
+</resourceusage>
+</buildresult>
+<buildresult>
+<configuration>
+<parameter id="mac_type" value="lite"/>
+<parameter id="rx_buf_size" value="512"/>
+<parameter id="tx_buf_size" value="512"/>
+<parameter id="num_rx_clients" value="8"/>
+<parameter id="num_tx_clients" value="1"/>
+<parameter id="combine_smi_ports" value="false"/>
+<parameter id="use_reset" value="true"/>
+</configuration>
+<resourceusage>
+<resourceusageitem id="cores" value="2"/>
+<resourceusageitem id="memory" value="0"/>
+<resourceusageitem id="codememory" value="3478"/>
+<resourceusageitem id="datamemory" value="3970"/>
+<resourceusageitem id="ports1bit" value="8"/>
+<resourceusageitem id="ports4bit" value="2"/>
+<resourceusageitem id="ports8bit" value="1"/>
+<resourceusageitem id="ports16bit" value="0"/>
+<resourceusageitem id="ports32bit" value="0"/>
+<resourceusageitem id="clocks" value="2"/>
+<resourceusageitem id="chanends" value="15"/>
+<resourceusageitem id="timers" value="2"/>
+</resourceusage>
+</buildresult>
+<buildresult>
+<configuration>
+<parameter id="mac_type" value="lite"/>
+<parameter id="rx_buf_size" value="512"/>
+<parameter id="tx_buf_size" value="512"/>
+<parameter id="num_rx_clients" value="1"/>
+<parameter id="num_tx_clients" value="8"/>
+<parameter id="combine_smi_ports" value="false"/>
+<parameter id="use_reset" value="true"/>
+</configuration>
+<resourceusage>
+<resourceusageitem id="cores" value="2"/>
+<resourceusageitem id="memory" value="0"/>
+<resourceusageitem id="codememory" value="3478"/>
+<resourceusageitem id="datamemory" value="3970"/>
+<resourceusageitem id="ports1bit" value="8"/>
+<resourceusageitem id="ports4bit" value="2"/>
+<resourceusageitem id="ports8bit" value="1"/>
+<resourceusageitem id="ports16bit" value="0"/>
+<resourceusageitem id="ports32bit" value="0"/>
+<resourceusageitem id="clocks" value="2"/>
+<resourceusageitem id="chanends" value="15"/>
+<resourceusageitem id="timers" value="2"/>
+</resourceusage>
+</buildresult>
+</buildresults>
+</allbuildresults>
