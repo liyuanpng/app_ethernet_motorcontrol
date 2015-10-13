@@ -14,10 +14,80 @@
 #include <stdio.h>
 #include <string.h>
 #include <ethernet_config.h>
+#include <velocity_ctrl_client.h>
+#include <statemachine.h>
 
 #include "protocol.h"
 
 
+/**
+ *  @brief Received the protocol data and implements the led behavioirs.
+ *  @param led    Interface server for the LED communication.
+ */
+void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl)
+{
+    static int cmd = 0, num = 0, old_speed = 0;
+    static int speed = 0, torque = 0;
+    timer tt;
+    unsigned ti;
+
+    int init_state = __check_velocity_init(c_velocity_ctrl);
+
+    while (init_state == INIT_BUSY) {
+        init_state = init_velocity_control(c_velocity_ctrl);
+    }
+
+    tt :> ti;
+    tt when timerafter(ti + 100000000) :> void;
+
+    while(1)
+    {
+        tt :> ti;
+        tt when timerafter(ti + 1000000) :> void;
+
+        select
+        {
+            case motor.msg(char motor_cmd, char motor_num, int motor_speed, int motor_torque) -> int reply:
+                if (motor_num >= 0 && motor_num < 3 && motor_cmd >= 0xa && motor_cmd <= 0xc)
+                {
+                    cmd = motor_cmd;
+                    num = motor_num;
+                    speed = motor_speed;
+                    torque = motor_torque;
+                    reply = 0xff;
+                }
+                else
+                    reply = 0;
+                break;
+
+            default:
+                switch (cmd)
+                {
+                    case 0xa:
+                        if (speed != old_speed)
+                        {
+                            set_velocity(speed, c_velocity_ctrl);
+                            old_speed = speed;
+                            printintln(speed);
+                        }
+                        break;
+
+                    case 0xb:
+                        if (speed != old_speed)
+                        {
+                            set_velocity(-speed, c_velocity_ctrl);
+                            old_speed = speed;
+                            printintln(-speed);
+                        }
+                        break;
+
+                    default:
+                        break;
+                }
+                break;
+        }
+    }
+}
 
 
 /**
@@ -33,11 +103,13 @@ void protocol_filter(char data[], int nBytes, client interface if_motor motor, c
 
     if (isForMe(data, MAC_INPUT) && isSNCN(data))
     {
+        printstrln("for Me!");
         // Send protocol data to led function.
         if (data[OFFSET_PAYLOAD] != 0x0)
         {
             // Send data to led server and receive answer.
-            reply = led.msg(data[OFFSET_PAYLOAD], data[OFFSET_PAYLOAD+1]);
+            reply = motor.msg(data[OFFSET_PAYLOAD], data[OFFSET_PAYLOAD+1],
+                    (data[OFFSET_PAYLOAD+2] << 8 | data[OFFSET_PAYLOAD+3]), (data[OFFSET_PAYLOAD+4] << 8 | data[OFFSET_PAYLOAD+5]));
             // Send addresses to send function.
             addr.msg(data, reply);
         }
@@ -49,7 +121,7 @@ void protocol_filter(char data[], int nBytes, client interface if_motor motor, c
  *  @param[in, out] data    Buffer with the receive packet.
  *  @param[in]      reply   Answer from led_server().
  */
-void make_packet(char data[], char reply)
+void protocol_make_packet(char data[], char reply)
 {
     char txbuffer[TX_SIZE];
 
@@ -74,7 +146,7 @@ void make_packet(char data[], char reply)
  *  @param dataToP2     Channel for port 2.
  *  @param[in] addr     Interface with the mac-address from filter().
  */
-void send(chanend dataToP1, chanend dataToP2, server interface if_addr addr)
+void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_addr addr)
 {
     unsigned int txbuffer[TX_SIZE];
 
@@ -84,8 +156,7 @@ void send(chanend dataToP1, chanend dataToP2, server interface if_addr addr)
         {
             case addr.msg(char address[], int reply):
                 memcpy(txbuffer, address, 14);
-
-                make_packet((txbuffer, char[]), reply);
+                protocol_make_packet((txbuffer, char[]), reply);
                 break;
         }
 
@@ -101,7 +172,7 @@ void send(chanend dataToP1, chanend dataToP2, server interface if_addr addr)
  *  @param[in,out]  led      Interface client for LED communication with led_server().
  *  @param[out]     addr     Interface client for address communication with send().
  */
-void protocol(chanend dataFromP1, chanend dataFromP2, client interface if_motor motor, client interface if_addr addr)
+void protocol_fetcher(chanend dataFromP1, chanend dataFromP2, client interface if_motor motor, client interface if_addr addr)
 {
     int nbytes;
     unsigned rxbuffer[400];

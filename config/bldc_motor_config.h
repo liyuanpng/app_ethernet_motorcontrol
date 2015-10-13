@@ -13,10 +13,10 @@
  * Define Motor Specific Constants (found in motor specification sheet)
  * Mandatory constants to be set
  */
-#define POLE_PAIRS                  8               // Number of pole pairs
+#define POLE_PAIRS                  3               // Number of pole pairs
 #define MAX_NOMINAL_SPEED           4000            // rpm
 #define MAX_NOMINAL_CURRENT         2               // A
-#define MOTOR_TORQUE_CONSTANT       72              // mNm/A
+#define MOTOR_TORQUE_CONSTANT       36              // mNm/A
 
 /**
  * If you have any gears added, specify gear-ratio
@@ -27,7 +27,7 @@
 
 /* Position Sensor Types (select your sensor type here)
  * (HALL/ QEI) */
-#define SENSOR_USED                 QEI
+#define SENSOR_USED                 HALL
 
 /* Define your Incremental Encoder type (QEI_INDEX/ QEI_WITH_NO_INDEX) */
 #define QEI_SENSOR_TYPE             QEI_WITH_INDEX
@@ -41,8 +41,8 @@
 #define IFM_RESOLUTION              DC100_RESOLUTION
 
 /* Commutation offset (range 0-4095) (HALL sensor based commutation) */
-#define COMMUTATION_OFFSET_CLK      910//683
-#define COMMUTATION_OFFSET_CCLK     2460//2731
+#define COMMUTATION_OFFSET_CLK      683
+#define COMMUTATION_OFFSET_CCLK     2731
 
 /* Motor Winding type (STAR_WINDING/DELTA_WINDING) */
 #define WINDING_TYPE                DELTA_WINDING

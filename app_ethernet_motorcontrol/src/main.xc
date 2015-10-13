@@ -29,6 +29,8 @@
 #include <profile_control.h>
 #include <qei_client.h>
 #include <internal_config.h>
+#include <adc_server_ad7949.h>
+#include <adc_client_ad7949.h>
 #include <torque_ctrl_server.h>
 //Configure your motor parameters in config/bldc_motor_config.h
 #include <bldc_motor_config.h>
@@ -52,55 +54,10 @@ ethernet_reset_interface_t eth_rst_p1 = ETHERNET_DEFAULT_RESET_INTERFACE_INIT_P1
 ethernet_reset_interface_t eth_rst_p2 = ETHERNET_DEFAULT_RESET_INTERFACE_INIT_P2;   // Interface to PHY reset for port 2
 
 
-/**
- *  @brief Received the protocol data and implements the led behavioirs.
- *  @param led    Interface server for the LED communication.
- */
-void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl)
-{
-    static int cmd = 0, num = 0, old_num = 0;
-    static int speed = 0, torque = 0;
-
-    while(1)
-    {
-        select
-        {
-            case motor.msg(char motor_cmd, char motor_num, int motor_speed, int motor_torque) -> int reply:
-                if (motor_num >= 0 && motor_num < 3 && motor_cmd >= 0xAA && motor_cmd <= 0xcc)
-                {
-                    cmd = motor_cmd;
-                    num = motor_num;
-                    speed = motor_speed;
-                    torque = motor_torque;
-                    reply = 0xff;
-                }
-                else
-                    reply = 0;
-                break;
-
-            default:
-                switch (cmd)
-                {
-                    case 0xa:
-                        set_velocity(speed, c_velocity_ctrl);
-                        break;
-
-                    case 0xb:
-                        set_velocity(-speed, c_velocity_ctrl);
-                        break;
-
-                    default:
-                        break;
-                }
-                break;
-        }
-    }
-}
-
-
 int main()
 {
     // Motor control channels
+    chan c_adc, c_adc_1;
     chan c_qei_p1, c_qei_p2, c_qei_p3, c_qei_p4, c_qei_p5, c_hall_p6, c_qei_p6;     // qei channels
     chan c_hall_p1, c_hall_p2, c_hall_p3, c_hall_p4, c_hall_p5;             // hall channels
     chan c_commutation_p1, c_commutation_p2, c_commutation_p3, c_signal;    // commutation channels
@@ -139,13 +96,15 @@ int main()
         eth_phy_config(1, smi_p1); // Port 1
         eth_phy_config(1, smi_p2); // Port 2
 
+        set_velocity(1000, c_velocity_ctrl);
+
         // Parallel Ethernet server loops
         par
         {
             // Port 1
-            ethernet_server_p1(mii_p1, smi_p1, MAC_ADDRESS_P1, rxP1, txP1);
+            ethernet_server_p1(mii_p1, smi_p1, MAC_INPUT, rxP1, txP1);
             // Port 2
-            ethernet_server_p2(mii_p2, smi_p2, MAC_ADDRESS_P2, rxP2, txP2);
+            ethernet_server_p2(mii_p2, smi_p2, MAC_OUTPUT, rxP2, txP2);
         }
       }
 
@@ -153,7 +112,7 @@ int main()
          * CLIENT TILE - ETHERNET HUB LAYER
          ************************************************************/
         // Ethernet hub server
-        on tile[1] :
+        on tile[1]:
         {
             par
             {
@@ -162,9 +121,11 @@ int main()
                     txP1, rxP1,
                     txP2, rxP2);
 
-                protocol_server(motor, c_velocity_ctrl);
+                //protocol_server(motor, c_velocity_ctrl);
 
-                send(dataToP1, dataToP2, addr);
+                protocol_send(dataToP1, dataToP2, addr);
+
+                protocol_fetcher(dataFromP1, dataFromP2, motor, addr);
             }
         }
 
@@ -211,11 +172,6 @@ int main()
                                 c_torque_ctrl);
             }
 
-            //  Ethernet hub client
-            {
-                protocol(dataFromP1, dataFromP2, led, addr);
-            }
-
         }
 
 
@@ -226,6 +182,11 @@ int main()
                 /* PWM Loop */
                 do_pwm_inv_triggered(c_pwm_ctrl, c_adctrig, p_ifm_dummy_port,\
                         p_ifm_motor_hi, p_ifm_motor_lo, clk_pwm);
+
+                /* ADC Loop */
+                adc_ad7949_triggered(c_adc, c_adc_1, c_adctrig, clk_adc,\
+                        p_ifm_adc_sclk_conv_mosib_mosia, p_ifm_adc_misoa,\
+                        p_ifm_adc_misob);
 
                 /* Motor Commutation loop */
                 {
@@ -245,7 +206,6 @@ int main()
                 run_watchdog(c_watchdog, p_ifm_wd_tick, p_ifm_shared_leds_wden);
 
                 /* Hall Server */
-
                 {
                     hall_par hall_params;
                     run_hall(c_hall_p1, c_hall_p2, c_hall_p3, c_hall_p4, c_hall_p5, c_hall_p6, p_ifm_hall, hall_params); // channel priority 1,2..5
@@ -253,13 +213,11 @@ int main()
 
 
                 /* QEI Server */
-
                 {
                     qei_par qei_params;
                     init_qei_param(qei_params);
                     run_qei(c_qei_p1, c_qei_p2, c_qei_p3, c_qei_p4, c_qei_p5, c_qei_p6, p_ifm_encoder, qei_params);          // channel priority 1,2..5
                 }
-
             }
         }
     }

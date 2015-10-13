@@ -22,7 +22,8 @@ interface if_addr
     void msg(char address[], int reply);
 };
 
-void protocol(chanend dataFromP1, chanend dataFromP2, client interface if_motor motor, client interface if_addr addr);
-void send(chanend dataToP1, chanend dataToP2, server interface if_addr addr);
+void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl);
+void protocol_fetcher(chanend dataFromP1, chanend dataFromP2, client interface if_motor motor, client interface if_addr addr);
+void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_addr addr);
 
 #endif /* PROTOCOL_H_ */

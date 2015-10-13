@@ -6,7 +6,7 @@ import traceback
 import time
 import os
 
-from etherled_settings import *
+from ethermotor_settings import *
 
 
 class Ethernet_Server:
@@ -20,84 +20,97 @@ class Ethernet_Server:
         self.__src_adr = self.__getHwAddr(self.__interface)
         
         
-    def init_addresses(**addresses):
-        for address in addresses:
+    def add_addresses(self, *args):
+        for address in args:
             self.__addresses.append(address)
             
-    def init_commands(cmds):
+    def add_commands(self, cmds):
         self.__dCmds = cmds
+        cmd = ""
         for key in self.__dCmds:
-            cmd += "(?<" + key + ">" + self.__dCmds[key] + ") "   
+            cmd += "(?P<" + key + ">" + self.__dCmds[key] + ") "
         cmd = cmd[:-1]
+        print cmd
         self.__re_cmd = re.compile(cmd)
+
         
     ##
     #   @brief Does the input processing
     #   @return     The node number, the led cmd, the led number and the error.
     #
-    def get_input():
+    def get_input(self):
         re_exit = re.compile(r"\w")
-        #re_input = re.compile(r"(?P<node>\d) (?P<cmd>\w) (?P<led>\d)")
         
         sys.stdout.write("send command: ")
         cmd_input = raw_input()
-        
+        cmd_dict = {}
+
         try:
-            cmds = re_input.search(cmd_input)
-            cmd_list = []
+            cmds = self.__re_cmd.search(cmd_input)
             if cmds:            
                 for key in self.__dCmds:
-                    cmd_list.append(nodeCmdLed.group(key))
+                    cmd_dict[key] = cmds.group(key)
                           
-                return cmd_list, 0
+                return cmd_dict, 0
             else:
                 exit = re_exit.search(cmd_input)
                 if exit and exit.group().lower() == "x":
+                    print "Exit..."
                     os._exit(1)
                 else:
                     print "Input Error! 1"
-                    return cmd_list, 1
+                    return cmd_dict, 1
             
         except:
             print "Input Error! 2"
             traceback.print_exc(file=sys.stdout)
-            return cmd_list, 1
+            return cmd_dict, 1
     
-    def send(payload):
-        packet = self.__make_packet(payload)
-        return self.__socket.send(packet)
+    def send(self, address, payload):
+        packet = self.__make_packet(address, payload)
+        try:
+            return self.__socket.send(packet)
+        except socket.timeout:
+            print "Sending reached Timeout!"
     
-    def receive():
-        return self.__socket.recv(1024)
+    def receive(self):
+        try:
+            return self.__socket.recv(1024)
+        except socket.timeout:
+            print "Receiving reached Timeout!"
     
-    def set_socket():
+    def set_socket(self):
         # Create the socket, bind it to the interface and set a 5 second timeout.
-        self.__socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(int(self.__interface,16))) 
+        self.__socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, 
+                                      socket.htons(int(self.__ethertype,16)))
         self.__socket.bind((self.__interface, 0))
         
-    def set_timeout(time):
+    def set_timeout(self, time):
         self.__socket.settimeout(time)
-    
-    def es_print():
-    
-    
-    def __make_packet(payload):
-        return self.__strToHex(self.__src_adr + self.__addresses(int(self.__dCmds["node"])-1) + payload)
+      
+    def __make_packet(self, address, payload):
+        val = self.__addresses[int(address)-1] + self.__src_adr + self.__ethertype + payload
+        return self.__strToHex(val)
     
     ##
     #   @brief Replaces the colon from the MAC addresses and decode the string into hex bytes.
     #   @param[in]  data    Input string.
     #   @return     the decoded string with removed colon
     #
-    def __strToHex(data):
+    def __strToHex(self, data):
         return data.replace(":", "").decode('hex')
     
+    def byteToHexStr(self, data):
+        if data is not None:
+            return "".join("{:02x}".format(ord(c)) for c in data)
+        else:
+            return ""
     ##
     #   @brief Gets the MAC address from the interface. Works only on linux.
     #   @param[in]  ifname  The interface name as string
     #   @return     The MAC address as a readable string.
     #
-    def __getHwAddr(ifname):
+    def __getHwAddr(self, ifname):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         info = fcntl.ioctl(s.fileno(), 0x8927,  struct.pack('256s', ifname[:15]))
         return ':'.join(['%02x' % ord(char) for char in info[18:24]])
@@ -108,47 +121,37 @@ class Ethernet_Server:
 #        
 def main():
              
-    dst_mac = 0
     error = 0
     
     re_reply = re.compile(r".*" + ethertype + "(?P<reply>\w\w).*")
 
-    src_addr = getHwAddr(interface)
-    
+    server = Ethernet_Server(interface, ethertype)
+    server.set_socket()
+    server.set_timeout(3)
 
-    
+    server.add_addresses(*dst_addresses)
+    server.add_commands({"node": "\d", "cmd": "\w", "motor": "\d", "speed": "\d{4}", "torque": "\d{4}"})
+    #server.add_commands({"node": "\d{1}", "cmd": "\w{2}", "led": "\d{2}"})
+
     while 1:
-        node, cmd, led, error = get_input()
-                   
-        if not error:
-            # Get mac address of the node
-            dst_addr = dst_addresses[int(node)-1]
-            print dst_addr
-            # Concat the cmd and the led number to the payload
-            payload = cmd + cmd + "0" + led
-            
-            try:
-                t0 = time.time()
-                rxdata = sendReceive(s, strToHex(dst_addr+src_addr+ethertype+payload))
-                t1 = time.time() - t0
-                print "Time:", t1, "seconds"
-                # Format the rx data as hex string.
-                data = "".join("{:02x}".format(ord(c)) for c in rxdata)
-                
-                reply = re_reply.search(data)
-                
-                if reply:
-                    reply = reply.group("reply")
-                    if reply.lower() == "ff":
-                        print "ACK"
-                    else:
-                        print "NACK"
-            except socket.timeout:
-                print "Timeout!"
-            except:
-                print "Error!"
-                traceback.print_exc(file=sys.stdout)
-                
+        cmds, error = server.get_input()
+
+        payload = "0" + cmds["cmd"] + "0" + cmds["motor"] + cmds["speed"] + cmds["torque"]
+        
+        print server.send(cmds["node"], payload)
+
+        rxdata = server.receive()
+
+        reply = re_reply.search(server.byteToHexStr(rxdata))
+
+        if reply:
+            reply = reply.group("reply")
+            if reply.lower() == "ff":
+                print "ACK"
+            else:
+                print "NACK"
+        else:
+            print "Nothing found in reply"        
 
 if __name__ == '__main__':
     main()
