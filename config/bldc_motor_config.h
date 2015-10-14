@@ -4,10 +4,11 @@
  * @author Synapticon GmbH <support@synapticon.com>
  */
 
+#pragma once
+
 #include <internal_config.h>
 #include <bldc_motor_init.h>
 
-#pragma once
 
 /**
  * Define Motor Specific Constants (found in motor specification sheet)

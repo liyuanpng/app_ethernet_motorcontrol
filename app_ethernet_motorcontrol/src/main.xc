@@ -53,6 +53,25 @@ mii_interface_t mii_p2 = ETHERNET_DEFAULT_MII_INIT_P2;  // Media Independent Int
 ethernet_reset_interface_t eth_rst_p1 = ETHERNET_DEFAULT_RESET_INTERFACE_INIT_P1;   // Interface to PHY reset for port 1
 ethernet_reset_interface_t eth_rst_p2 = ETHERNET_DEFAULT_RESET_INTERFACE_INIT_P2;   // Interface to PHY reset for port 2
 
+void velocity_test(chanend c_velocity_ctrl, chanend c_target_velocity)
+{
+    int target_velocity;                // rpm
+
+      int init_state = __check_velocity_init(c_velocity_ctrl);
+        while(init_state == INIT_BUSY)
+        {
+            init_state = init_velocity_control(c_velocity_ctrl);
+        }
+
+    while(1){
+        select{
+            case c_target_velocity :> target_velocity:
+                  break;
+        }
+
+        set_velocity(target_velocity, c_velocity_ctrl);
+    }
+}
 
 int main()
 {
@@ -62,7 +81,7 @@ int main()
     chan c_hall_p1, c_hall_p2, c_hall_p3, c_hall_p4, c_hall_p5;             // hall channels
     chan c_commutation_p1, c_commutation_p2, c_commutation_p3, c_signal;    // commutation channels
     chan c_pwm_ctrl, c_adctrig;                                             // pwm channels
-    chan c_velocity_ctrl;                                                   // velocity control channel
+    chan c_velocity_ctrl, c_target_velocity;                                // velocity control channel
     chan c_torque_ctrl; // torque control channel
     chan c_watchdog; // watchdog channel
 
@@ -80,8 +99,9 @@ int main()
        ************************************************************/
       on tile[COM_TILE]:
       {
-        printstr("MAC on P1: "); showMAC(MAC_ADDRESS_P1);
-        printstr("MAC on P2: "); showMAC(MAC_ADDRESS_P2);
+
+        //printstr("MAC on P1: "); showMAC(MAC_ADDRESS_P1);
+        //printstr("MAC on P2: "); showMAC(MAC_ADDRESS_P2);
 
         // Sequential Initialization stage for both ports
         // Ethernet PHY transceiver reset
@@ -96,11 +116,10 @@ int main()
         eth_phy_config(1, smi_p1); // Port 1
         eth_phy_config(1, smi_p2); // Port 2
 
-        set_velocity(1000, c_velocity_ctrl);
-
         // Parallel Ethernet server loops
         par
         {
+            //velocity_test(c_velocity_ctrl, c_target_velocity);
             // Port 1
             ethernet_server_p1(mii_p1, smi_p1, MAC_INPUT, rxP1, txP1);
             // Port 2
@@ -121,11 +140,16 @@ int main()
                     txP1, rxP1,
                     txP2, rxP2);
 
-                //protocol_server(motor, c_velocity_ctrl);
+                protocol_server(motor, c_velocity_ctrl);
 
                 protocol_send(dataToP1, dataToP2, addr);
 
                 protocol_fetcher(dataFromP1, dataFromP2, motor, addr);
+                 /*
+                {
+                    while (1) c_target_velocity <: 1000;
+                }*/
+                
             }
         }
 
@@ -157,7 +181,7 @@ int main()
                      qei_params, SENSOR_USED, c_hall_p2, c_qei_p2, c_velocity_ctrl, c_commutation_p2);
             }
 
-            /* Torque Control Loop */
+            /* Torque Control Loop
             {
                 ctrl_par torque_ctrl_params;
                 hall_par hall_params;
@@ -171,7 +195,7 @@ int main()
                                 SENSOR_USED, c_adc, c_commutation_p1, c_hall_p2,c_qei_p2,\
                                 c_torque_ctrl);
             }
-
+ */
         }
 
 
