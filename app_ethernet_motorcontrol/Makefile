@@ -6,7 +6,7 @@ TARGET = SOMANET-C22_Motor-Control_xSCOPE
 # The APP_NAME variable determines the name of the final .xe file. It should
 # not include the .xe postfix. If left blank the name will default to
 # the project name
-APP_NAME = demo-bldc-velocity
+APP_NAME = app_ethernet_motorcontrol
 
 # The USED_MODULES variable lists other module used by the application.
 USED_MODULES = config module_adc module_blocks module_board-support module_commutation module_ctrl_loops module_ethernet_dual module_ethernet_hub module_ethernet_smi module_hall module_locks module_motor module_motorcontrol_common module_profile module_pwm_symmetrical module_qei module_statemachine module_xscope-wrapper
@@ -16,7 +16,7 @@ USED_MODULES = config module_adc module_blocks module_board-support module_commu
 # XCC_XC_FLAGS, XCC_C_FLAGS, XCC_ASM_FLAGS, XCC_CPP_FLAGS
 # If the variable XCC_MAP_FLAGS is set it overrides the flags passed to
 # xcc for the final link (mapping) stage.
-XCC_FLAGS_Debug = -g -O0 -fxscope -DUSE_XSCOPE
+XCC_FLAGS_Debug = -g -O0 -fxscope -DUSE_XSCOPE -report
 XCC_FLAGS_Release = -g -O0 -fxscope
 
 # The VERBOSE variable, if set to 1, enables verbose output from the make system.

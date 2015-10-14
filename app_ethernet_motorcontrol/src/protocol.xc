@@ -15,6 +15,7 @@
 #include <string.h>
 #include <ethernet_config.h>
 #include <velocity_ctrl_client.h>
+#include <position_ctrl_client.h>
 #include <statemachine.h>
 
 #include "protocol.h"
@@ -24,10 +25,10 @@
  *  @brief Received the protocol data and implements the led behavioirs.
  *  @param led    Interface server for the LED communication.
  */
-void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl)
+void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl, chanend c_position_ctrl)
 {
-    static int cmd = 0, num = 0, old_speed = 0;
-    static int speed = 0, torque = 0;
+    static int cmd = 0, num = 0, old_speed = 0, old_pos = 0;
+    static int param = 0;
     timer tt;
     unsigned ti;
 
@@ -47,13 +48,12 @@ void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl)
 
         select
         {
-            case motor.msg(char motor_cmd, char motor_num, int motor_speed, int motor_torque) -> int reply:
+            case motor.msg(char motor_cmd, char motor_num, int motor_parameter) -> int reply:
                 if (motor_num >= 0 && motor_num < 3 && motor_cmd >= 0xa && motor_cmd <= 0xc)
                 {
                     cmd = motor_cmd;
                     num = motor_num;
-                    speed = motor_speed;
-                    torque = motor_torque;
+                    param = motor_parameter;
                     reply = 0xff;
                 }
                 else
@@ -64,23 +64,31 @@ void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl)
                 switch (cmd)
                 {
                     case 0xa:
-                        if (speed != old_speed)
+                        if (param != old_speed)
                         {
-                            set_velocity(speed, c_velocity_ctrl);
-                            old_speed = speed;
-                            printintln(speed);
+                            set_velocity(param, c_velocity_ctrl);
+                            old_speed = param;
+                            printintln(param);
                         }
                         break;
 
                     case 0xb:
-                        if (speed != old_speed)
+                        if (param != old_speed)
                         {
-                            set_velocity(-speed, c_velocity_ctrl);
-                            old_speed = speed;
-                            printintln(-speed);
+                            set_velocity(-param, c_velocity_ctrl);
+                            old_speed = param;
+                            printintln(-param);
                         }
                         break;
 
+                    case 0xc:
+                        if (param != old_pos)
+                        {
+                            set_position(param, c_position_ctrl);
+                            old_pos = param;
+                            printintln(param);
+                        }
+                        break;
                     default:
                         break;
                 }
@@ -103,13 +111,12 @@ void protocol_filter(char data[], int nBytes, client interface if_motor motor, c
 
     if (isForMe(data, MAC_INPUT) && isSNCN(data))
     {
-        printstrln("for Me!");
         // Send protocol data to led function.
         if (data[OFFSET_PAYLOAD] != 0x0)
         {
             // Send data to led server and receive answer.
             reply = motor.msg(data[OFFSET_PAYLOAD], data[OFFSET_PAYLOAD+1],
-                    (data[OFFSET_PAYLOAD+2] << 8 | data[OFFSET_PAYLOAD+3]), (data[OFFSET_PAYLOAD+4] << 8 | data[OFFSET_PAYLOAD+5]));
+                    (data[OFFSET_PAYLOAD+2] << 8 | data[OFFSET_PAYLOAD+3]));
             // Send addresses to send function.
             addr.msg(data, reply);
         }

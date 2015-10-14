@@ -14,7 +14,7 @@
 
 interface if_motor
 {
-    int msg(char motor_cmd, char motor_num, int motor_speed, int motor_torque);
+    int msg(char motor_cmd, char motor_num, int motor_parameter);
 };
 
 interface if_addr
@@ -22,7 +22,7 @@ interface if_addr
     void msg(char address[], int reply);
 };
 
-void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl);
+void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl, chanend c_position_ctrl);
 void protocol_fetcher(chanend dataFromP1, chanend dataFromP2, client interface if_motor motor, client interface if_addr addr);
 void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_addr addr);
 

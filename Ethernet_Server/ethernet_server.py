@@ -19,11 +19,22 @@ class Ethernet_Server:
         self.__socket = None
         self.__src_adr = self.__getHwAddr(self.__interface)
         
-        
+    ##
+    #   @brief Adds the mac addresses.
+    #   @param[in] *args    The parameter can be a list of strings or single strings seperated by a comma ("ff:ff:ff:ff:ff:f", "ff:ff:ff:ff:ff:f", ...).
+    #                       There is no limit.
+    #   
     def add_addresses(self, *args):
         for address in args:
             self.__addresses.append(address)
             
+    ##
+    #   @brief  Adds the commands for the input interpretation. The commands must be in a dictionary, where the key is the command name
+    #           and the value is the command form as regex.
+    #           Important: The order of the commands in the dictionary differs from the final order in the regex string.
+    #                      The reason is the dictionary is a hash map and uses hashes as index.
+    #   @param[in] cmds     Commands in a dictionary.
+    #
     def add_commands(self, cmds):
         self.__dCmds = cmds
         cmd = ""
@@ -36,7 +47,7 @@ class Ethernet_Server:
         
     ##
     #   @brief Does the input processing
-    #   @return     The node number, the led cmd, the led number and the error.
+    #   @return     The parameters in a list and an error. (Error is obsolet.)
     #
     def get_input(self):
         re_exit = re.compile(r"\w")
@@ -66,6 +77,12 @@ class Ethernet_Server:
             traceback.print_exc(file=sys.stdout)
             return cmd_dict, 1
     
+    ##
+    #   @brief  Put address and payload into a packet and sends it.
+    #   @param[in]  address  Destination mac address as a index for the address list.
+    #   @param[in]  payload  Data to be transfered.
+    #   @return     Amount of transfered bytes.
+    #
     def send(self, address, payload):
         packet = self.__make_packet(address, payload)
         try:
@@ -73,21 +90,36 @@ class Ethernet_Server:
         except socket.timeout:
             print "Sending reached Timeout!"
     
+    ##
+    #   @brief Receives reply.
+    #   @return     Reply.
+    #
     def receive(self):
         try:
             return self.__socket.recv(1024)
         except socket.timeout:
             print "Receiving reached Timeout!"
     
+    ##
+    #   @brief Creates the socket and bind it to the interface.
+    #
     def set_socket(self):
-        # Create the socket, bind it to the interface and set a 5 second timeout.
         self.__socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, 
                                       socket.htons(int(self.__ethertype,16)))
         self.__socket.bind((self.__interface, 0))
-        
+    
+    ##
+    #   @brief Sets the timeout for the socket.
+    #
     def set_timeout(self, time):
         self.__socket.settimeout(time)
-      
+     
+    ##
+    #   @brief Put all data into a ethernet packet and decode it in a byte string.
+    #   @param[in]  address  Destination mac address as a index for the address list.
+    #   @param[in]  payload  Data to be transfered.
+    #   @return     The packet as a byte string.
+    # 
     def __make_packet(self, address, payload):
         val = self.__addresses[int(address)-1] + self.__src_adr + self.__ethertype + payload
         return self.__strToHex(val)
@@ -100,6 +132,10 @@ class Ethernet_Server:
     def __strToHex(self, data):
         return data.replace(":", "").decode('hex')
     
+    ##
+    #   @brief Decodes a byte string in a readable hex string.
+    #   @return     Hex string.
+    #
     def byteToHexStr(self, data):
         if data is not None:
             return "".join("{:02x}".format(ord(c)) for c in data)
@@ -116,43 +152,5 @@ class Ethernet_Server:
         return ':'.join(['%02x' % ord(char) for char in info[18:24]])
 
         
-##
-#   @brief Main function with the loop.
-#        
-def main():
-             
-    error = 0
-    
-    re_reply = re.compile(r".*" + ethertype + "(?P<reply>\w\w).*")
 
-    server = Ethernet_Server(interface, ethertype)
-    server.set_socket()
-    server.set_timeout(3)
-
-    server.add_addresses(*dst_addresses)
-    server.add_commands({"node": "\d", "cmd": "\w", "motor": "\d", "speed": "\d{4}", "torque": "\d{4}"})
-    #server.add_commands({"node": "\d{1}", "cmd": "\w{2}", "led": "\d{2}"})
-
-    while 1:
-        cmds, error = server.get_input()
-
-        payload = "0" + cmds["cmd"] + "0" + cmds["motor"] + cmds["speed"] + cmds["torque"]
-        
-        print server.send(cmds["node"], payload)
-
-        rxdata = server.receive()
-
-        reply = re_reply.search(server.byteToHexStr(rxdata))
-
-        if reply:
-            reply = reply.group("reply")
-            if reply.lower() == "ff":
-                print "ACK"
-            else:
-                print "NACK"
-        else:
-            print "Nothing found in reply"        
-
-if __name__ == '__main__':
-    main()
 
