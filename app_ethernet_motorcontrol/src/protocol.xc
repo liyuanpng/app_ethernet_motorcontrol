@@ -20,7 +20,32 @@
 
 #include "protocol.h"
 
+int protocol_controlling(chanend c_velocity_ctrl, chanend c_position_ctrl, char cmd, char num, int param)
+{
+    int ret = 0;
+    switch (cmd)
+    {
+        case 0xa:
+            // First at all set positioning to 0.
+            set_position(0, c_position_ctrl);
+            set_velocity(param, c_velocity_ctrl);
+            ret = get_velocity(c_velocity_ctrl);
+            printintln(ret);
+            break;
 
+        case 0xb:
+            // First at all set velocity to 0.
+            set_velocity(0, c_velocity_ctrl);
+            set_position(param, c_position_ctrl);
+            ret = get_position(c_position_ctrl);
+            printintln(ret);
+            break;
+        default:
+            break;
+    }
+
+    return ret;
+}
 
 /**
  *  @brief Received the protocol data and does the motor controlling
@@ -30,7 +55,7 @@
  */
 void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl, chanend c_position_ctrl)
 {
-    static int cmd = 0, num = 0, old_speed = 0, old_pos = 0;
+    static int cmd = 0, num = 0;
     static int param = 0;
     timer tt;
     unsigned ti;
@@ -53,39 +78,16 @@ void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl, c
                     num = motor_num;
                     param = motor_parameter;
                     // Send reply
-                    reply = 0xff;
+                    reply = protocol_controlling(c_velocity_ctrl, c_position_ctrl, cmd, num, param);
                 }
                 else
+                {
                     reply = 0;
+                }
                 break;
 
             default:
-                switch (cmd)
-                {
-                    case 0xa:
-                        if (param != old_speed)
-                        {
-                            // First at all set positioning to 0.
-                            set_position(0, c_position_ctrl);
-                            set_velocity(param, c_velocity_ctrl);
-                            old_speed = param;
-                            printintln(param);
-                        }
-                        break;
 
-                    case 0xb:
-                        if (param != old_pos)
-                        {
-                            // First at all set velocity to 0.
-                            set_velocity(0, c_velocity_ctrl);
-                            set_position(param, c_position_ctrl);
-                            old_pos = param;
-                            printintln(param);
-                        }
-                        break;
-                    default:
-                        break;
-                }
                 break;
         }
     }
@@ -125,7 +127,7 @@ void protocol_filter(char data[], int nBytes, client interface if_motor motor, c
  *  @param[in, out] data    Buffer with the receive packet.
  *  @param[in]      reply   Answer from led_server().
  */
-void protocol_make_packet(char data[], char reply)
+void protocol_make_packet(char data[], int reply)
 {
     char txbuffer[TX_SIZE];
 
@@ -139,7 +141,10 @@ void protocol_make_packet(char data[], char reply)
     txbuffer[ETHERTYPE_BYTE]    = data[ETHERTYPE_BYTE];
     txbuffer[ETHERTYPE_BYTE +1] = data[ETHERTYPE_BYTE +1];
 
-    txbuffer[OFFSET_PAYLOAD] = reply;
+    txbuffer[OFFSET_PAYLOAD] =   reply >> 24;
+    txbuffer[OFFSET_PAYLOAD+1] = reply >> 16;
+    txbuffer[OFFSET_PAYLOAD+2] = reply >> 8;
+    txbuffer[OFFSET_PAYLOAD+3] = reply;
 
     memcpy(data, txbuffer, TX_SIZE);
 }

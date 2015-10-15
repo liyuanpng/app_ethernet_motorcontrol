@@ -1,6 +1,6 @@
 import socket
 import sys
-import fcntl, socket, struct
+import fcntl, struct
 import re
 import traceback
 import time
@@ -19,6 +19,7 @@ class Ethernet_Server:
         self.__socket = None
         self.__src_adr = self.__getHwAddr(self.__interface)
         self.__static_cmds = {}
+        self.__mode = 0
         
     ##
     #   @brief Adds the mac addresses.
@@ -45,6 +46,8 @@ class Ethernet_Server:
         print cmd
         self.__re_cmd = re.compile(cmd)
 
+        #given_val, missing_val = self.__parse_args()
+
     def add_static_packet(self, cmds, key):
         self.__static_cmds[key] = cmds
 
@@ -55,7 +58,26 @@ class Ethernet_Server:
         print "Input Error! 3"
         return {}
 
-        
+    def __parse_args(self):
+        re_cmd = re.compile(r"(?P<cmd>\w+)=(?P<val>[^\s]+)")
+        cmds = {}
+        missing_cmd = ""
+
+        # Static mode, parse commands with given values, missing one.
+        if sys.argv[1] == "-s":
+            for args in sys.argv[1:]:
+                res = re_cmd.search(args)        
+                if res:
+                    cmds[res.group("cmd")] = res.group("val")
+            print cmds
+
+            for key in self.__d_cmds:
+                if not key in cmds:
+                    missing_cmd = key
+
+        return cmds, missing_cmd
+
+  
     ##
     #   @brief Does the input processing
     #   @return     The parameters in a list and an error. (Error is obsolet.)
