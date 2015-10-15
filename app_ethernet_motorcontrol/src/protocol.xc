@@ -21,9 +21,12 @@
 #include "protocol.h"
 
 
+
 /**
- *  @brief Received the protocol data and implements the led behavioirs.
- *  @param led    Interface server for the LED communication.
+ *  @brief Received the protocol data and does the motor controlling
+ *  @param[in, out] motor    Interface with the motor commands.
+ *  @param[out]      c_velocity_ctrl     Channel for the velocity controlling.
+ *  @param[out]      c_position_ctrl     Channel for the position controlling.
  */
 void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl, chanend c_position_ctrl)
 {
@@ -31,12 +34,6 @@ void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl, c
     static int param = 0;
     timer tt;
     unsigned ti;
-
-    int init_state = __check_velocity_init(c_velocity_ctrl);
-
-    while (init_state == INIT_BUSY) {
-        init_state = init_velocity_control(c_velocity_ctrl);
-    }
 
     tt :> ti;
     tt when timerafter(ti + 100000000) :> void;
@@ -48,12 +45,14 @@ void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl, c
 
         select
         {
+            // Get the motor commands
             case motor.msg(char motor_cmd, char motor_num, int motor_parameter) -> int reply:
                 if (motor_num >= 0 && motor_num < 3 && motor_cmd >= 0xa && motor_cmd <= 0xc)
                 {
                     cmd = motor_cmd;
                     num = motor_num;
                     param = motor_parameter;
+                    // Send reply
                     reply = 0xff;
                 }
                 else
@@ -66,6 +65,8 @@ void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl, c
                     case 0xa:
                         if (param != old_speed)
                         {
+                            // First at all set positioning to 0.
+                            set_position(0, c_position_ctrl);
                             set_velocity(param, c_velocity_ctrl);
                             old_speed = param;
                             printintln(param);
@@ -73,17 +74,10 @@ void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl, c
                         break;
 
                     case 0xb:
-                        if (param != old_speed)
-                        {
-                            set_velocity(-param, c_velocity_ctrl);
-                            old_speed = param;
-                            printintln(-param);
-                        }
-                        break;
-
-                    case 0xc:
                         if (param != old_pos)
                         {
+                            // First at all set velocity to 0.
+                            set_velocity(0, c_velocity_ctrl);
                             set_position(param, c_position_ctrl);
                             old_pos = param;
                             printintln(param);
@@ -108,15 +102,18 @@ void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl, c
 void protocol_filter(char data[], int nBytes, client interface if_motor motor, client interface if_addr addr)
 {
     int reply;
+    int16_t param = 0;
 
     if (isForMe(data, MAC_INPUT) && isSNCN(data))
     {
         // Send protocol data to led function.
         if (data[OFFSET_PAYLOAD] != 0x0)
         {
+            // To get negative numbers, we need here a 16-bit variable.
+            param = (data[OFFSET_PAYLOAD+2] << 8 | data[OFFSET_PAYLOAD+3]);
+
             // Send data to led server and receive answer.
-            reply = motor.msg(data[OFFSET_PAYLOAD], data[OFFSET_PAYLOAD+1],
-                    (data[OFFSET_PAYLOAD+2] << 8 | data[OFFSET_PAYLOAD+3]));
+            reply = motor.msg(data[OFFSET_PAYLOAD], data[OFFSET_PAYLOAD+1], param);
             // Send addresses to send function.
             addr.msg(data, reply);
         }

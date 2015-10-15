@@ -15,9 +15,10 @@ class Ethernet_Server:
         self.__ethertype = ethertype
         self.__addresses = []
         self.__re_cmd = None
-        self.__dCmds = {}
+        self.__d_cmds = {}
         self.__socket = None
         self.__src_adr = self.__getHwAddr(self.__interface)
+        self.__static_cmds = {}
         
     ##
     #   @brief Adds the mac addresses.
@@ -36,13 +37,23 @@ class Ethernet_Server:
     #   @param[in] cmds     Commands in a dictionary.
     #
     def add_commands(self, cmds):
-        self.__dCmds = cmds
+        self.__d_cmds = cmds
         cmd = ""
-        for key in self.__dCmds:
-            cmd += "(?P<" + key + ">" + self.__dCmds[key] + ") "
+        for key in self.__d_cmds:
+            cmd += "(?P<" + key + ">" + self.__d_cmds[key] + ") "
         cmd = cmd[:-1]
         print cmd
         self.__re_cmd = re.compile(cmd)
+
+    def add_static_packet(self, cmds, key):
+        self.__static_cmds[key] = cmds
+
+    def __proceed_static_pkt(self, val):
+        for key in self.__static_cmds:
+            if val == key:
+                return self.__static_cmds[key]
+        print "Input Error! 3"
+        return {}
 
         
     ##
@@ -50,7 +61,7 @@ class Ethernet_Server:
     #   @return     The parameters in a list and an error. (Error is obsolet.)
     #
     def get_input(self):
-        re_exit = re.compile(r"\w")
+        re_other = re.compile(r"\w{1,4}")
         
         sys.stdout.write("send command: ")
         cmd_input = raw_input()
@@ -59,15 +70,17 @@ class Ethernet_Server:
         try:
             cmds = self.__re_cmd.search(cmd_input)
             if cmds:            
-                for key in self.__dCmds:
+                for key in self.__d_cmds:
                     cmd_dict[key] = cmds.group(key)
                           
                 return cmd_dict, 0
             else:
-                exit = re_exit.search(cmd_input)
-                if exit and exit.group().lower() == "x":
+                other = re_other.search(cmd_input)
+                if other and other.group().lower() == "x":
                     print "Exit..."
                     os._exit(1)
+                elif other:
+                    return self.__proceed_static_pkt(other.group().lower()), 0
                 else:
                     print "Input Error! 1"
                     return cmd_dict, 1
