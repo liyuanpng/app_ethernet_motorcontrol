@@ -27,7 +27,7 @@ def main():
     server.set_timeout(3)
 
     server.add_addresses(*dst_addresses)
-    server.add_commands({"node": "\d", "cmd": "\d\d", "motor": "\d", "param": "-?\w{1,5}"})
+    server.add_commands({"node": "\d", "cmd": "\d{1,2}", "motor": "\d", "param": "-?\w{1,5}"})
 
     server.add_static_packet({"node": "7", "cmd": "10", "motor": "0", "param": "1000"}, "v1")
     server.add_static_packet({"node": "7", "cmd": "10", "motor": "0", "param": "-1000"}, "v2")
@@ -42,14 +42,16 @@ def main():
 
             payload = convertIntoHexStr(cmds["cmd"], 8) + convertIntoHexStr(cmds["motor"], 8) + param
             
+            print payload
             server.send(cmds["node"], payload)
 
             rxdata = server.receive()
 
             #reply = re_reply.search(server.byteToHexStr(rxdata))
             reply = server.byteToHexStr(rxdata)
-
-            print "Position:", int(reply[14*2:14*2+8], 16)
+            if reply:
+                print "Position:", int(reply[14*2:14*2+8], 16)
+            
             """
             if reply:
                 reply = reply.group("reply")

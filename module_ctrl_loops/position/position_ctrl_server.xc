@@ -102,11 +102,12 @@ void position_control(ctrl_par &position_ctrl_params, hall_par &hall_params, qei
                 error_position = (target_position - actual_position);
                 error_position_I = error_position_I + error_position;
                 error_position_D = error_position - previous_error;
+                /*
 #ifdef USE_XSCOPE
                 xscope_int(0, actual_position);
                 xscope_int(1, target_position);
                 xscope_int(2, error_position);
-#endif
+#endif */
                 if (error_position_I > position_ctrl_params.Integral_limit) {
                     error_position_I = position_ctrl_params.Integral_limit;
                 } else if (error_position_I < -position_ctrl_params.Integral_limit) {

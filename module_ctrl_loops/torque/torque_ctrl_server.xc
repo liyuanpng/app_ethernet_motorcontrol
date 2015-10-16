@@ -244,11 +244,11 @@ static void torque_ctrl_loop(ctrl_par &torque_ctrl_params, hall_par &hall_params
 
                 phase_a = 0 - phase_a_filtered;
                 phase_b = 0 - phase_b_filtered;
-
+/*
 #ifdef USE_XSCOPE
                 xscope_int(0, phase_a);
                 xscope_int(1, phase_b);
-#endif
+#endif */
 
                 alpha = phase_a;
                 beta = (phase_a + 2*phase_b);  // beta = (a1 + 2*a2)/1.732 0.57736 --> invers from 1.732

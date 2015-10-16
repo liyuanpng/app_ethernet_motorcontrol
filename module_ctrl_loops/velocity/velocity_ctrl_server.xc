@@ -144,10 +144,11 @@ void velocity_control( ctrl_par & velocity_ctrl_params,
             }
 
             if(activate == 1) {
+                /*
 #ifdef USE_XSCOPE
                 xscope_int(0,actual_velocity );
                 xscope_int(1, target_velocity);
-#endif
+#endif*/
                 compute_flag = 1;
                 /* Controller */
                 error_velocity   = (target_velocity - actual_velocity);
