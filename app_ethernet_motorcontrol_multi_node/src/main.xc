@@ -23,8 +23,6 @@
 #include <pwm_service_inv.h>
 #include <commutation_server.h>
 #include <refclk.h>
-#include <velocity_ctrl_client.h>
-#include <velocity_ctrl_server.h>
 #include <xscope_wrapper.h>
 #include <profile.h>
 #include <drive_modes.h>
@@ -34,15 +32,13 @@
 #include <internal_config.h>
 #include <adc_server_ad7949.h>
 #include <adc_client_ad7949.h>
-#include <torque_ctrl_server.h>
-
 #include <position_ctrl_client.h>
 #include <position_ctrl_server.h>
 //Configure your motor parameters in config/bldc_motor_config.h
 #include <bldc_motor_config_1.h>
 #include <bldc_motor_config_2.h>
 #include <bldc_motor_config_3.h>
-#include <velocity_ctrl_client.h>
+
 
 #include "protocol.h"
 
@@ -71,72 +67,44 @@ ethernet_reset_interface_t eth_rst_p2 = ETHERNET_DEFAULT_RESET_INTERFACE_INIT_P2
 
 /**
  *  @brief Initialized the positioning server.
+ *  @param[in] motor    Motor number
  *  @param[out] c_position_ctrl     Channel for the position controlling.
  */
-void init_positioning_motor1(chanend c_position_ctrl)
+void init_positioning_motor(int motor, chanend c_position_ctrl)
 {
+    int sensor_type;
     hall_par hall_params;
     qei_par qei_params;
     init_qei_param(qei_params);
     init_hall_param(hall_params);
 
-    // Initialise Profile Limits for position profile generator and select position sensor
-    init_position_profile_limits(MAX_ACCELERATION_1, MAX_PROFILE_VELOCITY_1, qei_params, hall_params, \
-            SENSOR_SELECTION_CODE_1, MAX_POSITION_LIMIT_1, MIN_POSITION_LIMIT_1);
-
-    int init_state = __check_position_init(c_position_ctrl);
-
-    while(init_state == INIT_BUSY)
+    switch (motor)
     {
-        set_position_sensor(SENSOR_SELECTION_CODE_1, c_position_ctrl);
-        init_state = init_position_control(c_position_ctrl);
+        case 0:
+            // Initialise Profile Limits for position profile generator and select position sensor
+            init_position_profile_limits(MAX_ACCELERATION_1, MAX_PROFILE_VELOCITY_1, qei_params, hall_params, \
+                    SENSOR_SELECTION_CODE_1, MAX_POSITION_LIMIT_1, MIN_POSITION_LIMIT_1);
+            sensor_type = SENSOR_SELECTION_CODE_1;
+            break;
+        case 1:
+            // Initialise Profile Limits for position profile generator and select position sensor
+            init_position_profile_limits(MAX_ACCELERATION_2, MAX_PROFILE_VELOCITY_2, qei_params, hall_params, \
+                    SENSOR_SELECTION_CODE_2, MAX_POSITION_LIMIT_2, MIN_POSITION_LIMIT_2);
+            sensor_type = SENSOR_SELECTION_CODE_2;
+            break;
+        case 2:
+            // Initialise Profile Limits for position profile generator and select position sensor
+            init_position_profile_limits(MAX_ACCELERATION_3, MAX_PROFILE_VELOCITY_3, qei_params, hall_params, \
+                    SENSOR_SELECTION_CODE_3, MAX_POSITION_LIMIT_3, MIN_POSITION_LIMIT_3);
+            sensor_type = SENSOR_SELECTION_CODE_3;
+            break;
     }
-}
-
-/**
- *  @brief Initialized the positioning server.
- *  @param[out] c_position_ctrl     Channel for the position controlling.
- */
-void init_positioning_motor2(chanend c_position_ctrl)
-{
-    hall_par hall_params;
-    qei_par qei_params;
-    init_qei_param(qei_params);
-    init_hall_param(hall_params);
-
-    // Initialise Profile Limits for position profile generator and select position sensor
-    init_position_profile_limits(MAX_ACCELERATION_2, MAX_PROFILE_VELOCITY_2, qei_params, hall_params, \
-            SENSOR_SELECTION_CODE_2, MAX_POSITION_LIMIT_2, MIN_POSITION_LIMIT_2);
 
     int init_state = __check_position_init(c_position_ctrl);
 
     while(init_state == INIT_BUSY)
     {
-        set_position_sensor(SENSOR_SELECTION_CODE_2, c_position_ctrl);
-        init_state = init_position_control(c_position_ctrl);
-    }
-}
-
-/**
- *  @brief Initialized the positioning server.
- *  @param[out] c_position_ctrl     Channel for the position controlling.
- */
-void init_positioning_motor3(chanend c_position_ctrl)
-{
-    hall_par hall_params;
-    qei_par qei_params;
-    init_qei_param(qei_params);
-    init_hall_param(hall_params);
-
-    // Initialise Profile Limits for position profile generator and select position sensor
-    init_position_profile_limits(MAX_ACCELERATION_3, MAX_PROFILE_VELOCITY_3, qei_params, hall_params, \
-            SENSOR_SELECTION_CODE_3, MAX_POSITION_LIMIT_3, MIN_POSITION_LIMIT_3);
-
-    int init_state = __check_position_init(c_position_ctrl);
-
-    while(init_state == INIT_BUSY)
-    {
-        set_position_sensor(SENSOR_SELECTION_CODE_3, c_position_ctrl);
+        set_position_sensor(sensor_type, c_position_ctrl);
         init_state = init_position_control(c_position_ctrl);
     }
 }
@@ -152,27 +120,27 @@ int main()
     chan c_commutation_p1_n0, c_commutation_p2_n0, c_commutation_p3_n0, c_signal_n0;                    // commutation channels
     chan c_pwm_ctrl_n0, c_adctrig_n0;                                                                   // pwm channels
     chan c_watchdog_n0;                                                                                 // watchdog channel
-    chan c_position_ctrl_n0;
+    chan c_position_ctrl_n0;                                                                            // position channel
 
     /* ##### Node 1 ##### */
     // Motor control channels
     chan c_adc_n1, c_adc_1_n1;
-    chan c_qei_p1_n1, c_qei_p2_n1, c_qei_p3_n1, c_qei_p4_n1, c_qei_p5_n1, c_hall_p6_n1, c_qei_p6_n1;     // qei channels
-    chan c_hall_p1_n1, c_hall_p2_n1, c_hall_p3_n1, c_hall_p4_n1, c_hall_p5_n1;             // hall channels
-    chan c_commutation_p1_n1, c_commutation_p2_n1, c_commutation_p3_n1, c_signal_n1;    // commutation channels
-    chan c_pwm_ctrl_n1, c_adctrig_n1;                                             // pwm channels
-    chan c_watchdog_n1;                                        // watchdog channel
-    chan c_position_ctrl_n1;
+    chan c_qei_p1_n1, c_qei_p2_n1, c_qei_p3_n1, c_qei_p4_n1, c_qei_p5_n1, c_hall_p6_n1, c_qei_p6_n1;    // qei channels
+    chan c_hall_p1_n1, c_hall_p2_n1, c_hall_p3_n1, c_hall_p4_n1, c_hall_p5_n1;                          // hall channels
+    chan c_commutation_p1_n1, c_commutation_p2_n1, c_commutation_p3_n1, c_signal_n1;                    // commutation channels
+    chan c_pwm_ctrl_n1, c_adctrig_n1;                                                                   // pwm channels
+    chan c_watchdog_n1;                                                                                 // watchdog channel
+    chan c_position_ctrl_n1;                                                                            // position channel
 
     /* ##### Node 2 ##### */
     // Motor control channels
     chan c_adc_n2, c_adc_1_n2;
-    chan c_qei_p1_n2, c_qei_p2_n2, c_qei_p3_n2, c_qei_p4_n2, c_qei_p5_n2, c_hall_p6_n2, c_qei_p6_n2;     // qei channels
-    chan c_hall_p1_n2, c_hall_p2_n2, c_hall_p3_n2, c_hall_p4_n2, c_hall_p5_n2;             // hall channels
-    chan c_commutation_p1_n2, c_commutation_p2_n2, c_commutation_p3_n2, c_signal_n2;    // commutation channels
-    chan c_pwm_ctrl_n2, c_adctrig_n2;                                             // pwm channels
-    chan c_watchdog_n2;                                        // watchdog channel
-    chan c_position_ctrl_n2;
+    chan c_qei_p1_n2, c_qei_p2_n2, c_qei_p3_n2, c_qei_p4_n2, c_qei_p5_n2, c_hall_p6_n2, c_qei_p6_n2;    // qei channels
+    chan c_hall_p1_n2, c_hall_p2_n2, c_hall_p3_n2, c_hall_p4_n2, c_hall_p5_n2;                          // hall channels
+    chan c_commutation_p1_n2, c_commutation_p2_n2, c_commutation_p3_n2, c_signal_n2;                    // commutation channels
+    chan c_pwm_ctrl_n2, c_adctrig_n2;                                                                   // pwm channels
+    chan c_watchdog_n2;                                                                                 // watchdog channel
+    chan c_position_ctrl_n2;                                                                            // position channel
 
     // Ethernet channels
     chan rxP1, txP1, rxP2, txP2;                      // Communicate HUB to MAC
@@ -224,9 +192,9 @@ int main()
         // Ethernet hub server and protocol server
         on tile[NODE_0_APP_TILE_1]:
         {
-            init_positioning_motor1(c_position_ctrl_n0);
-            init_positioning_motor2(c_position_ctrl_n1);
-            init_positioning_motor3(c_position_ctrl_n2);
+            init_positioning_motor(0, c_position_ctrl_n0);
+            init_positioning_motor(1, c_position_ctrl_n1);
+            init_positioning_motor(2, c_position_ctrl_n2);
 
             par
             {

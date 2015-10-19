@@ -27,8 +27,14 @@
 #include "protocol.h"
 
 
-
-int protocol_controlling(chanend c_position_ctrl, char cmd, int param)
+/**
+ *  @brief Sends the position to the motor.
+ *  @param[in, out] c_position_ctrl    Interface with the motor commands.
+ *  @param[in]  cmd     Command for the motor (Obsolet).
+ *  @param[in]  param   Motor parameter. In this case the position.
+ *  @return     Current position of the motor.
+ */
+int protocol_set_position(chanend c_position_ctrl, char cmd, int param)
 {
     int ret = 0;
 
@@ -50,16 +56,14 @@ int protocol_controlling(chanend c_position_ctrl, char cmd, int param)
 /**
  *  @brief Received the protocol data and does the motor controlling
  *  @param[in, out] motor    Interface with the motor commands.
- *  @param[out]      c_velocity_ctrl     Channel for the velocity controlling.
- *  @param[out]      c_position_ctrl     Channel for the position controlling.
+ *  @param[out]      c_p_ctrl_n0     Channel for velocity controlling motor/node 0.
+ *  @param[out]      c_p_ctrl_n1     Channel for velocity controlling motor/node 1.
+ *  @param[out]      c_p_ctrl_n2     Channel for velocity controlling motor/node 2.
  */
 void protocol_server(server interface if_motor motor, chanend c_p_ctrl_n0, chanend c_p_ctrl_n1, chanend c_p_ctrl_n2)
 {
     timer tt;
     unsigned ti;
-
-    //init_positioning(c_p_ctrl_n0);
-    //init_positioning_motor2(c_p_ctrl_n0);
 
     tt :> ti;
     tt when timerafter(ti + 100000000) :> void;
@@ -75,21 +79,19 @@ void protocol_server(server interface if_motor motor, chanend c_p_ctrl_n0, chane
             case motor.msg(char motor_cmd, char motor_num, int motor_parameter) -> int reply:
                 if (motor_num >= 0 && motor_num < 3 && motor_cmd >= 0xa && motor_cmd <= 0xc)
                 {
-                    //printintln(motor_cmd); printintln(motor_num); printintln(motor_parameter);
                     // Send reply
                     switch (motor_num)
                     {
                     case 0:
-                        reply = protocol_controlling(c_p_ctrl_n0, motor_cmd, motor_parameter);
+                        reply = protocol_set_position(c_p_ctrl_n0, motor_cmd, motor_parameter);
                         break;
                     case 1:
-                        reply = protocol_controlling(c_p_ctrl_n1, motor_cmd, motor_parameter);
+                        reply = protocol_set_position(c_p_ctrl_n1, motor_cmd, motor_parameter);
                         break;
                     case 2:
-                        reply = protocol_controlling(c_p_ctrl_n2, motor_cmd, motor_parameter);
+                        reply = protocol_set_position(c_p_ctrl_n2, motor_cmd, motor_parameter);
                         break;
                     }
-
                 }
                 else
                 {
@@ -109,8 +111,8 @@ void protocol_server(server interface if_motor motor, chanend c_p_ctrl_n0, chane
  *  @brief Filters the protocol packages.
  *  @param[in]      data     Buffer with the packet.
  *  @param[in]      nBytes   Byte count.
- *  @param[in,out]  led      Interface client for LED communication with led_server().
- *  @param[out]     addr     Interface client for address communication with send().
+ *  @param[in,out]  motor    Interface client for motor communication with protocol_server().
+ *  @param[out]     addr     Interface client for address communication with protocol_send().
  */
 void protocol_filter(char data[], int nBytes, client interface if_motor motor, client interface if_addr addr)
 {
@@ -136,7 +138,7 @@ void protocol_filter(char data[], int nBytes, client interface if_motor motor, c
 /**
  *  @brief Receives the receive packet and changed it to the transfer packet.
  *  @param[in, out] data    Buffer with the receive packet.
- *  @param[in]      reply   Answer from led_server().
+ *  @param[in]      reply   Answer from protocol_server().
  */
 void protocol_make_packet(char data[], int reply)
 {
@@ -164,7 +166,7 @@ void protocol_make_packet(char data[], int reply)
  *  @brief Send the response packages to the server.
  *  @param dataToP1     Channel for port 1.
  *  @param dataToP2     Channel for port 2.
- *  @param[in] addr     Interface with the mac-address from filter().
+ *  @param[in] addr     Interface with the mac-address from protocol_filter().
  */
 void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_addr addr)
 {
@@ -189,8 +191,8 @@ void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_addr 
  *  @brief Fetched all packages from the ports.
  *  @param dataFromP1   Channel for port 1.
  *  @param dataFromP2   Channel for port 2.
- *  @param[in,out]  led      Interface client for LED communication with led_server().
- *  @param[out]     addr     Interface client for address communication with send().
+ *  @param[in,out]  motor    Interface client for motor communication with protocol_server().
+ *  @param[out]     addr     Interface client for address communication with protocol_send().
  */
 void protocol_fetcher(chanend dataFromP1, chanend dataFromP2, client interface if_motor motor, client interface if_addr addr)
 {
