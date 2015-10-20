@@ -44,7 +44,7 @@ int protocol_set_position(chanend c_position_ctrl, char cmd, int param)
         case 0xb:
             set_position(param, c_position_ctrl);
             ret = get_position(c_position_ctrl);
-            printintln(ret);
+            //printintln(ret);
             break;
         default:
             break;
@@ -198,6 +198,7 @@ void protocol_fetcher(chanend dataFromP1, chanend dataFromP2, client interface i
 {
     int nbytes;
     unsigned rxbuffer[400];
+    static unsigned int test = 0;
 
     while(1)
     {
@@ -209,6 +210,9 @@ void protocol_fetcher(chanend dataFromP1, chanend dataFromP2, client interface i
            case fetchFrameFromHub(dataFromP2, rxbuffer, nbytes):
                            break;
        }
+
+       test++;
+       printintln(test);
 
        protocol_filter((rxbuffer, char[]), nbytes, motor, addr);
 

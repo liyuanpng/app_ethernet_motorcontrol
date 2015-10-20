@@ -34,6 +34,7 @@
 #include <adc_client_ad7949.h>
 #include <position_ctrl_client.h>
 #include <position_ctrl_server.h>
+
 //Configure your motor parameters in config/bldc_motor_config.h
 #include <bldc_motor_config_1.h>
 #include <bldc_motor_config_2.h>
@@ -42,8 +43,10 @@
 
 #include "protocol.h"
 
-#define ON  0
-#define OFF 1
+const motor_config[3][6] = {{MAX_ACCELERATION_1, MAX_PROFILE_VELOCITY_1, SENSOR_SELECTION_CODE_1, MAX_POSITION_LIMIT_1, MIN_POSITION_LIMIT_1, SENSOR_SELECTION_CODE_1},
+                            {MAX_ACCELERATION_2, MAX_PROFILE_VELOCITY_2, SENSOR_SELECTION_CODE_2, MAX_POSITION_LIMIT_2, MIN_POSITION_LIMIT_2, SENSOR_SELECTION_CODE_2},
+                            {MAX_ACCELERATION_3, MAX_PROFILE_VELOCITY_3, SENSOR_SELECTION_CODE_3, MAX_POSITION_LIMIT_3, MIN_POSITION_LIMIT_3, SENSOR_SELECTION_CODE_3}};
+
 
 on stdcore[NODE_0_IFM_TILE]: clock clk_adc_0 = XS1_CLKBLK_1;
 on stdcore[NODE_0_IFM_TILE]: clock clk_pwm_0 = XS1_CLKBLK_REF;
@@ -72,42 +75,26 @@ ethernet_reset_interface_t eth_rst_p2 = ETHERNET_DEFAULT_RESET_INTERFACE_INIT_P2
  */
 void init_positioning_motor(int motor, chanend c_position_ctrl)
 {
-    int sensor_type;
     hall_par hall_params;
     qei_par qei_params;
     init_qei_param(qei_params);
     init_hall_param(hall_params);
 
-    switch (motor)
-    {
-        case 0:
-            // Initialise Profile Limits for position profile generator and select position sensor
-            init_position_profile_limits(MAX_ACCELERATION_1, MAX_PROFILE_VELOCITY_1, qei_params, hall_params, \
-                    SENSOR_SELECTION_CODE_1, MAX_POSITION_LIMIT_1, MIN_POSITION_LIMIT_1);
-            sensor_type = SENSOR_SELECTION_CODE_1;
-            break;
-        case 1:
-            // Initialise Profile Limits for position profile generator and select position sensor
-            init_position_profile_limits(MAX_ACCELERATION_2, MAX_PROFILE_VELOCITY_2, qei_params, hall_params, \
-                    SENSOR_SELECTION_CODE_2, MAX_POSITION_LIMIT_2, MIN_POSITION_LIMIT_2);
-            sensor_type = SENSOR_SELECTION_CODE_2;
-            break;
-        case 2:
-            // Initialise Profile Limits for position profile generator and select position sensor
-            init_position_profile_limits(MAX_ACCELERATION_3, MAX_PROFILE_VELOCITY_3, qei_params, hall_params, \
-                    SENSOR_SELECTION_CODE_3, MAX_POSITION_LIMIT_3, MIN_POSITION_LIMIT_3);
-            sensor_type = SENSOR_SELECTION_CODE_3;
-            break;
-    }
+    // Initialise Profile Limits for position profile generator and select position sensor
+    /* MAX_ACCELERATION, MAX_PROFILE_VELOCITY, qei_params, hall_params,
+       SENSOR_USED, MAX_POSITION_LIMIT, MIN_POSITION_LIMIT */
+    init_position_profile_limits(motor_config[motor][0], motor_config[motor][1], qei_params, hall_params, \
+            motor_config[motor][2], motor_config[motor][3], motor_config[motor][4]);
 
     int init_state = __check_position_init(c_position_ctrl);
 
     while(init_state == INIT_BUSY)
     {
-        set_position_sensor(sensor_type, c_position_ctrl);
+        set_position_sensor(motor_config[motor][5], c_position_ctrl);
         init_state = init_position_control(c_position_ctrl);
     }
 }
+
 
 
 int main()
@@ -148,43 +135,42 @@ int main()
     interface if_motor motor;
     interface if_addr addr;
 
-  par
+    par
     {
-      /* ######################################### NODE 0 ######################################### */
+        /* ######################################### NODE 0 ######################################### */
 
-      /************************************************************
-       * COM TILE - MAC LAYER
-       ************************************************************/
-      on tile[NODE_0_COM_TILE]:
-      {
-
-        //printstr("MAC on P1: "); showMAC(MAC_ADDRESS_P1);
-        //printstr("MAC on P2: "); showMAC(MAC_ADDRESS_P2);
-
-
-        // Sequential Initialization stage for both ports
-        // Ethernet PHY transceiver reset
-        eth_phy_reset(eth_rst_p1); // Port 1
-        eth_phy_reset(eth_rst_p2); // Port 2
-
-        // Initialize SMI for communication. These functions belong to module_ethernet_smi.
-        smi_init(smi_p1); // Port 1
-        smi_init(smi_p2); // Port 2
-
-        // Set config over SMI. These functions belong to module_ethernet_smi.
-        eth_phy_config(1, smi_p1); // Port 1
-        eth_phy_config(1, smi_p2); // Port 2
-
-        // Parallel Ethernet server loops
-        par
+        /************************************************************
+        * COM TILE - MAC LAYER
+        ************************************************************/
+        on tile[NODE_0_COM_TILE]:
         {
-            // Port 1
-            ethernet_server_p1(mii_p1, smi_p1, MAC_INPUT, rxP1, txP1);
-            // Port 2
-            ethernet_server_p2(mii_p2, smi_p2, MAC_OUTPUT, rxP2, txP2);
 
+            //printstr("MAC on P1: "); showMAC(MAC_ADDRESS_P1);
+            //printstr("MAC on P2: "); showMAC(MAC_ADDRESS_P2);
+
+            // Sequential Initialization stage for both ports
+            // Ethernet PHY transceiver reset
+            eth_phy_reset(eth_rst_p1); // Port 1
+            eth_phy_reset(eth_rst_p2); // Port 2
+
+            // Initialize SMI for communication. These functions belong to module_ethernet_smi.
+            smi_init(smi_p1); // Port 1
+            smi_init(smi_p2); // Port 2
+
+            // Set config over SMI. These functions belong to module_ethernet_smi.
+            eth_phy_config(1, smi_p1); // Port 1
+            eth_phy_config(1, smi_p2); // Port 2
+
+            // Parallel Ethernet server loops
+            par
+            {
+                // Port 1
+                ethernet_server_p1(mii_p1, smi_p1, MAC_INPUT, rxP1, txP1);
+                // Port 2
+                ethernet_server_p2(mii_p2, smi_p2, MAC_OUTPUT, rxP2, txP2);
+
+            }
         }
-      }
 
         /************************************************************
          * CLIENT TILE - ETHERNET HUB LAYER
@@ -304,15 +290,12 @@ int main()
                  // Control Loop
                  position_control(position_ctrl_params, hall_params, qei_params, SENSOR_SELECTION_CODE_2, c_hall_p3_n1,\
                          c_qei_p3_n1, c_position_ctrl_n1, c_commutation_p3_n1);
-
             }
-
         }
 
 
         on tile[NODE_1_IFM_TILE]:
         {
-
             par
             {
                 /* PWM Loop */
@@ -360,7 +343,6 @@ int main()
 
                 on tile[NODE_2_APP_TILE]:
                 {
-
                     /* Position Control Loop */
                     {
                          ctrl_par position_ctrl_params;
@@ -377,15 +359,12 @@ int main()
                          // Control Loop
                          position_control(position_ctrl_params, hall_params, qei_params, SENSOR_SELECTION_CODE_2, c_hall_p3_n2,\
                                  c_qei_p3_n2, c_position_ctrl_n2, c_commutation_p3_n2);
-
                     }
-
                 }
 
 
                 on tile[NODE_2_IFM_TILE]:
                 {
-
                     par
                     {
                         /* PWM Loop */
