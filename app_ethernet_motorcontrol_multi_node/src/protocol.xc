@@ -62,16 +62,16 @@ int protocol_set_position(chanend c_position_ctrl, char cmd, int param)
  */
 void protocol_server(server interface if_motor motor, chanend c_p_ctrl_n0, chanend c_p_ctrl_n1, chanend c_p_ctrl_n2)
 {
-    timer tt;
-    unsigned ti;
+    //timer tt;
+    //unsigned ti;
 
-    tt :> ti;
-    tt when timerafter(ti + 100000000) :> void;
+    //tt :> ti;
+    //tt when timerafter(ti + 100000000) :> void;
 
     while(1)
     {
-        tt :> ti;
-        tt when timerafter(ti + 1000000) :> void;
+        //tt :> ti;
+        //tt when timerafter(ti + 1000000) :> void;
 
         select
         {
@@ -118,10 +118,12 @@ void protocol_filter(char data[], int nBytes, client interface if_motor motor, c
 {
     int reply;
     int16_t param = 0;
+    static unsigned int test = 0;
 
     if (isForMe(data, MAC_INPUT) && isSNCN(data))
     {
-        // Send protocol data to led function.
+        printintln(test++);
+        // Send protocol data to motor function.
         if (data[OFFSET_PAYLOAD] != 0x0)
         {
             // To get negative numbers, we need here a 16-bit variable.
@@ -198,7 +200,7 @@ void protocol_fetcher(chanend dataFromP1, chanend dataFromP2, client interface i
 {
     int nbytes;
     unsigned rxbuffer[400];
-    static unsigned int test = 0;
+
 
     while(1)
     {
@@ -211,8 +213,7 @@ void protocol_fetcher(chanend dataFromP1, chanend dataFromP2, client interface i
                            break;
        }
 
-       test++;
-       printintln(test);
+
 
        protocol_filter((rxbuffer, char[]), nbytes, motor, addr);
 

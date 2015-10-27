@@ -1,7 +1,7 @@
 #pragma once
 
 // ########### CHANGE ONLY THIS MACRO ############
-#define NODE 7
+#define NODE 6
 
 //IP ADDRESSES
 // NOTE: YOU MAY NEED TO REDEFINE THIS TO AN IP ADDRESS THAT WORKS

@@ -30,7 +30,7 @@
 
 /* Position Sensor Types (select your sensor type here)
  * (HALL/ QEI_INDEX/ QEI_NO_INDEX) */
-#define SENSOR_SELECTION_CODE_3         QEI
+#define SENSOR_SELECTION_CODE_3         HALL//QEI
 
 /* Polarity is used to keep all position sensors to count ticks in the same direction
  *  (QEI_POLARITY_NORMAL/QEI_POLARITY_INVERTED) */

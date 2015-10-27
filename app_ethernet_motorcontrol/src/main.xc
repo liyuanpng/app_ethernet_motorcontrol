@@ -20,8 +20,6 @@
 #include <pwm_service_inv.h>
 #include <commutation_server.h>
 #include <refclk.h>
-#include <velocity_ctrl_client.h>
-#include <velocity_ctrl_server.h>
 #include <xscope_wrapper.h>
 #include <profile.h>
 #include <drive_modes.h>
@@ -37,12 +35,9 @@
 #include <position_ctrl_server.h>
 //Configure your motor parameters in config/bldc_motor_config.h
 #include <bldc_motor_config.h>
-#include <velocity_ctrl_client.h>
 
 #include "protocol.h"
 
-#define ON  0
-#define OFF 1
 
 on stdcore[IFM_TILE]: clock clk_adc = XS1_CLKBLK_1;
 on stdcore[IFM_TILE]: clock clk_pwm = XS1_CLKBLK_REF;
@@ -56,19 +51,6 @@ mii_interface_t mii_p2 = ETHERNET_DEFAULT_MII_INIT_P2;  // Media Independent Int
 ethernet_reset_interface_t eth_rst_p1 = ETHERNET_DEFAULT_RESET_INTERFACE_INIT_P1;   // Interface to PHY reset for port 1
 ethernet_reset_interface_t eth_rst_p2 = ETHERNET_DEFAULT_RESET_INTERFACE_INIT_P2;   // Interface to PHY reset for port 2
 
-
-/**
- *  @brief Initialized the positioning server.
- *  @param[out]      c_velocity_ctrl     Channel for the velocity controlling.
- */
-void init_velocity(chanend c_velocity_ctrl)
-{
-    int init_state = __check_velocity_init(c_velocity_ctrl);
-
-    while (init_state == INIT_BUSY) {
-        init_state = init_velocity_control(c_velocity_ctrl);
-    }
-}
 
 /**
  *  @brief Initialized the positioning server.
@@ -103,8 +85,6 @@ int main()
     chan c_hall_p1, c_hall_p2, c_hall_p3, c_hall_p4, c_hall_p5;             // hall channels
     chan c_commutation_p1, c_commutation_p2, c_commutation_p3, c_signal;    // commutation channels
     chan c_pwm_ctrl, c_adctrig;                                             // pwm channels
-    chan c_velocity_ctrl;                                   // velocity control channel
-    chan c_torque_ctrl;                                     // torque control channel
     chan c_watchdog;                                        // watchdog channel
     chan c_position_ctrl;
 
@@ -113,6 +93,8 @@ int main()
     chan dataFromP1, dataToP1, dataFromP2, dataToP2;  // Communicate HUB tu upper layers
     interface if_motor motor;
     interface if_addr addr;
+
+    chan foe_comm, foe_signal, c_flash_data, c_nodes[1];  // Firmware Update channels
 
   par
     {
@@ -147,6 +129,8 @@ int main()
             // Port 2
             ethernet_server_p2(mii_p2, smi_p2, MAC_OUTPUT, rxP2, txP2);
 
+            firmware_update_loop(p_spi_flash, foe_comm, foe_signal, c_flash_data, c_nodes, null); // firmware update over ethernet
+
         }
       }
 
@@ -156,7 +140,6 @@ int main()
         // Ethernet hub server and protocol server
         on tile[1]:
         {
-            init_velocity(c_velocity_ctrl);
             init_postioning(c_position_ctrl);
 
             par
@@ -166,11 +149,11 @@ int main()
                     txP1, rxP1,
                     txP2, rxP2);
 
-                protocol_server(motor, c_velocity_ctrl, c_position_ctrl);
+                protocol_server(motor, c_position_ctrl);
 
                 protocol_send(dataToP1, dataToP2, addr);
 
-                protocol_fetcher(dataFromP1, dataFromP2, motor, addr);
+                protocol_fetcher(dataFromP1, dataFromP2, foe_comm, foe_signal, c_flash_data, c_nodes, motor, addr);
             }
         }
 
@@ -182,27 +165,6 @@ int main()
         {
             par
             {
-                /* Velocity Control Loop */
-                {
-                    ctrl_par velocity_ctrl_params;
-                    filter_par sensor_filter_params;
-                    hall_par hall_params;
-                    qei_par qei_params;
-
-                    /* Initialize PID parameters for Velocity Control (defined in config/motor/bldc_motor_config.h) */
-                    init_velocity_control_param(velocity_ctrl_params);
-
-                    /* Initialize Sensor configuration parameters (defined in config/motor/bldc_motor_config.h) */
-                    init_hall_param(hall_params);
-                    init_qei_param(qei_params);
-
-                    /* Initialize sensor filter length */
-                    init_sensor_filter_param(sensor_filter_params);
-
-                    /* Control Loop */
-                    velocity_control(velocity_ctrl_params, sensor_filter_params, hall_params, \
-                         qei_params, SENSOR_USED, c_hall_p2, c_qei_p2, c_velocity_ctrl, c_commutation_p2);
-                }
 
                 /* Position Control Loop */
                 {

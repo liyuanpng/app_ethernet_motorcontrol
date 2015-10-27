@@ -95,6 +95,42 @@ void init_positioning_motor(int motor, chanend c_position_ctrl)
     }
 }
 
+inline void move_motor(unsigned pos, unsigned dir)
+{
+    if (pos == 16000)
+        dir = 0;
+    else if (pos == 0)
+        dir = 1;
+
+    if (dir)
+        pos++;
+    else
+        pos--;
+}
+
+void do_the_motor_move(chanend c_pos0, chanend c_pos1)
+{
+    static unsigned pos = 0;
+    static unsigned dir = 1;
+
+
+    while (1)
+    {
+        printintln(pos);
+        if (pos == 16000)
+            dir = 0;
+        else if (pos == 0)
+            dir = 1;
+
+        if (dir)
+            pos += 200;
+        else
+            pos -= 200;
+
+        set_position(pos, c_pos0);
+        set_position(pos, c_pos1);
+    }
+}
 
 
 int main()
@@ -144,7 +180,7 @@ int main()
         ************************************************************/
         on tile[NODE_0_COM_TILE]:
         {
-
+/*
             //printstr("MAC on P1: "); showMAC(MAC_ADDRESS_P1);
             //printstr("MAC on P2: "); showMAC(MAC_ADDRESS_P2);
 
@@ -160,14 +196,14 @@ int main()
             // Set config over SMI. These functions belong to module_ethernet_smi.
             eth_phy_config(1, smi_p1); // Port 1
             eth_phy_config(1, smi_p2); // Port 2
-
+*/
             // Parallel Ethernet server loops
             par
             {
                 // Port 1
-                ethernet_server_p1(mii_p1, smi_p1, MAC_INPUT, rxP1, txP1);
+                //ethernet_server_p1(mii_p1, smi_p1, MAC_INPUT, rxP1, txP1);
                 // Port 2
-                ethernet_server_p2(mii_p2, smi_p2, MAC_OUTPUT, rxP2, txP2);
+                //ethernet_server_p2(mii_p2, smi_p2, MAC_OUTPUT, rxP2, txP2);
 
             }
         }
@@ -184,16 +220,20 @@ int main()
 
             par
             {
+                /*
                 ethernetHUB(dataFromP1, dataToP1,
                     dataFromP2, dataToP2,
                     txP1, rxP1,
                     txP2, rxP2);
+*/
+                //protocol_server(motor, c_position_ctrl_n0, c_position_ctrl_n1, c_position_ctrl_n2);
 
-                protocol_server(motor, c_position_ctrl_n0, c_position_ctrl_n1, c_position_ctrl_n2);
+                //protocol_send(dataToP1, dataToP2, addr);
 
-                protocol_send(dataToP1, dataToP2, addr);
+                //protocol_fetcher(dataFromP1, dataFromP2, motor, addr);
 
-                protocol_fetcher(dataFromP1, dataFromP2, motor, addr);
+                //do_the_motor_move0(c_position_ctrl_n0);
+                do_the_motor_move(c_position_ctrl_n0, c_position_ctrl_n2);
             }
         }
 

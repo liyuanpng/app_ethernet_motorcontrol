@@ -20,22 +20,13 @@
 
 #include "protocol.h"
 
-int protocol_controlling(chanend c_velocity_ctrl, chanend c_position_ctrl, char cmd, char num, int param)
+
+int protocol_controlling(chanend c_position_ctrl, char cmd, int param)
 {
     int ret = 0;
     switch (cmd)
     {
-        case 0xa:
-            // First at all set positioning to 0.
-            set_position(0, c_position_ctrl);
-            set_velocity(param, c_velocity_ctrl);
-            ret = get_velocity(c_velocity_ctrl);
-            printintln(ret);
-            break;
-
         case 0xb:
-            // First at all set velocity to 0.
-            set_velocity(0, c_velocity_ctrl);
             set_position(param, c_position_ctrl);
             ret = get_position(c_position_ctrl);
             printintln(ret);
@@ -53,32 +44,27 @@ int protocol_controlling(chanend c_velocity_ctrl, chanend c_position_ctrl, char 
  *  @param[out]      c_velocity_ctrl     Channel for the velocity controlling.
  *  @param[out]      c_position_ctrl     Channel for the position controlling.
  */
-void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl, chanend c_position_ctrl)
+void protocol_server(server interface if_motor motor, chanend c_position_ctrl)
 {
-    static int cmd = 0, num = 0;
-    static int param = 0;
-    timer tt;
-    unsigned ti;
+    //timer tt;
+    //unsigned ti;
 
-    tt :> ti;
-    tt when timerafter(ti + 100000000) :> void;
+    //tt :> ti;
+    //tt when timerafter(ti + 100000000) :> void;
 
     while(1)
     {
-        tt :> ti;
-        tt when timerafter(ti + 1000000) :> void;
+        //tt :> ti;
+        //tt when timerafter(ti + 1000000) :> void;
 
         select
         {
             // Get the motor commands
-            case motor.msg(char motor_cmd, char motor_num, int motor_parameter) -> int reply:
-                if (motor_num >= 0 && motor_num < 3 && motor_cmd >= 0xa && motor_cmd <= 0xc)
+            case motor.msg(char motor_cmd, int motor_parameter) -> int reply:
+                if (motor_cmd >= 0xa && motor_cmd <= 0xc)
                 {
-                    cmd = motor_cmd;
-                    num = motor_num;
-                    param = motor_parameter;
                     // Send reply
-                    reply = protocol_controlling(c_velocity_ctrl, c_position_ctrl, cmd, num, param);
+                    reply = protocol_controlling(c_position_ctrl, motor_cmd, motor_parameter);
                 }
                 else
                 {
@@ -101,25 +87,28 @@ void protocol_server(server interface if_motor motor, chanend c_velocity_ctrl, c
  *  @param[in,out]  led      Interface client for LED communication with led_server().
  *  @param[out]     addr     Interface client for address communication with send().
  */
-void protocol_filter(char data[], int nBytes, client interface if_motor motor, client interface if_addr addr)
+int protocol_motor_filter(char data[], int nBytes, client interface if_motor motor, client interface if_addr addr)
 {
     int reply;
     int16_t param = 0;
 
     if (isForMe(data, MAC_INPUT) && isSNCN(data))
     {
-        // Send protocol data to led function.
+        // Send protocol data to motor function.
         if (data[OFFSET_PAYLOAD] != 0x0)
         {
             // To get negative numbers, we need here a 16-bit variable.
-            param = (data[OFFSET_PAYLOAD+2] << 8 | data[OFFSET_PAYLOAD+3]);
+            param = (data[OFFSET_PAYLOAD+1] << 8 | data[OFFSET_PAYLOAD+2]);
 
-            // Send data to led server and receive answer.
-            reply = motor.msg(data[OFFSET_PAYLOAD], data[OFFSET_PAYLOAD+1], param);
+            // Send data to motor server and receive answer.
+            reply = motor.msg(data[OFFSET_PAYLOAD], param);
             // Send addresses to send function.
             addr.msg(data, reply);
         }
+        return 1;
     }
+
+    return 0;
 }
 
 /**
@@ -181,7 +170,10 @@ void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_addr 
  *  @param[in,out]  led      Interface client for LED communication with led_server().
  *  @param[out]     addr     Interface client for address communication with send().
  */
-void protocol_fetcher(chanend dataFromP1, chanend dataFromP2, client interface if_motor motor, client interface if_addr addr)
+void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,
+                      chanend foe_comm, chanend foe_signal,
+                      chanend c_flash_data, chanend c_nodes,
+                      client interface motor, client interface addr)
 {
     int nbytes;
     unsigned rxbuffer[400];
@@ -197,7 +189,8 @@ void protocol_fetcher(chanend dataFromP1, chanend dataFromP2, client interface i
                            break;
        }
 
-       protocol_filter((rxbuffer, char[]), nbytes, motor, addr);
+       if (!protocol_motor_filter((rxbuffer, char[]), nbytes, motor, addr))
+                flash_filter((rxbuffer,char[]), foe_comm, foe_signal, c_flash_data, c_nodes, nbytes, addr);
 
     }
 }

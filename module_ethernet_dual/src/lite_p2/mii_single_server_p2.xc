@@ -50,16 +50,17 @@ static void the_server(chanend cIn, chanend cOut, chanend cNotifications,
     while (1) {
         select {
 		case linkcheck_timer when timerafter(linkcheck_time) :> void :
-                  if (!isnull(smi))
+            if (!isnull(smi))
 			{
 				static int phy_status = 0;
 				int new_status = smi_check_link_state(smi);
-				if (new_status != phy_status) {
-                                  outuint(appIn, -1);
-                                  appIn :> int _;
-                                  appIn <: new_status;
-                                  appIn <: 0;
-                                  phy_status = new_status;
+				if (new_status != phy_status)
+				{
+                    outuint(appIn, -1);
+                    appIn :> int _;
+                    appIn <: new_status;
+                    appIn <: 0;
+                    phy_status = new_status;
 				}
 			}
 			linkcheck_time += 10000000;
