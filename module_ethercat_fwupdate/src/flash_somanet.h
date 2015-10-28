@@ -30,11 +30,12 @@
  * @param c_nodes[]     channel to subsequent nodes
  * @param reset         signal from firmware updater a reset occured.
  */
+/*
 void firmware_update_loop(REFERENCE_PARAM(fl_SPIPorts, SPI), chanend foe_comm, chanend foe_signal,
                           chanend c_flash_data, chanend c_nodes[], NULLABLE_RESOURCE(chanend, reset));
 
 void firmware_update_dx(REFERENCE_PARAM(fl_SPIPorts, SPI), chanend c_node, int node_number);
-
+*/
 int read_data_flash(chanend c_flash_data, unsigned page, unsigned char data[256],
                     unsigned data_length);
 

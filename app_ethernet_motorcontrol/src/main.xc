@@ -92,7 +92,7 @@ int main()
     chan rxP1, txP1, rxP2, txP2;                      // Communicate HUB to MAC
     chan dataFromP1, dataToP1, dataFromP2, dataToP2;  // Communicate HUB tu upper layers
     interface if_motor motor;
-    interface if_addr addr;
+    interface if_tx tx;
 
     chan foe_comm, foe_signal, c_flash_data, c_nodes[1];  // Firmware Update channels
 
@@ -129,7 +129,7 @@ int main()
             // Port 2
             ethernet_server_p2(mii_p2, smi_p2, MAC_OUTPUT, rxP2, txP2);
 
-            firmware_update_loop(p_spi_flash, foe_comm, foe_signal, c_flash_data, c_nodes, null); // firmware update over ethernet
+            //firmware_update_loop(p_spi_flash, foe_comm, foe_signal, c_flash_data, c_nodes, null); // firmware update over ethernet
 
         }
       }
@@ -151,9 +151,9 @@ int main()
 
                 protocol_server(motor, c_position_ctrl);
 
-                protocol_send(dataToP1, dataToP2, addr);
+                protocol_send(dataToP1, dataToP2, tx);
 
-                protocol_fetcher(dataFromP1, dataFromP2, foe_comm, foe_signal, c_flash_data, c_nodes, motor, addr);
+                protocol_fetcher(dataFromP1, dataFromP2, foe_comm, foe_signal, c_flash_data, c_nodes, motor, tx);
             }
         }
 

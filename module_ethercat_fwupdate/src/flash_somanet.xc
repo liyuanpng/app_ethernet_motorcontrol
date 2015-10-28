@@ -5,6 +5,9 @@
  * @author Synapticon GmbH <support@synapticon.com>
  */
 
+#include <flash_somanet.h>
+#include <xs1.h>
+
 #if 1
 static void core_reset(void)    // auto reset from software
 {

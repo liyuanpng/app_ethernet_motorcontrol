@@ -17,17 +17,17 @@ interface if_motor
     int msg(char motor_cmd, int motor_parameter);
 };
 
-interface if_addr
+interface if_tx
 {
-    void msg(char address[], int reply);
+    void msg(char reply[]);
 };
 
 void protocol_server(server interface if_motor motor, chanend c_position_ctrl);
-int protocol_motor_filter(chanend dataFromP1, chanend dataFromP2, client interface if_motor motor, client interface if_addr addr);
-void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_addr addr);
+int protocol_motor_filter(char data[], int nBytes, client interface if_motor motor, client interface if_tx tx);
+void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_tx tx);
 void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,
                       chanend foe_comm, chanend foe_signal,
-                      chanend c_flash_data, chanend c_nodes,
-                      client interface motor, client interface addr);
+                      chanend c_flash_data, chanend c_nodes[],
+                      client interface if_motor motor, client interface if_tx tx);
 
 #endif /* PROTOCOL_H_ */

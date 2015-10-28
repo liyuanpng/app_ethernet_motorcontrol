@@ -19,6 +19,9 @@
 #include <statemachine.h>
 
 #include "protocol.h"
+#include "flash_over_ethernet.h"
+
+#define BUFFER_SIZE 400
 
 
 int protocol_controlling(chanend c_position_ctrl, char cmd, int param)
@@ -87,7 +90,7 @@ void protocol_server(server interface if_motor motor, chanend c_position_ctrl)
  *  @param[in,out]  led      Interface client for LED communication with led_server().
  *  @param[out]     addr     Interface client for address communication with send().
  */
-int protocol_motor_filter(char data[], int nBytes, client interface if_motor motor, client interface if_addr addr)
+int protocol_motor_filter(char data[], int nBytes, client interface if_motor motor, client interface if_tx tx)
 {
     int reply;
     int16_t param = 0;
@@ -103,7 +106,8 @@ int protocol_motor_filter(char data[], int nBytes, client interface if_motor mot
             // Send data to motor server and receive answer.
             reply = motor.msg(data[OFFSET_PAYLOAD], param);
             // Send addresses to send function.
-            addr.msg(data, reply);
+            memcpy((data + OFFSET_PAYLOAD), (char *) &reply, 4);
+            tx.msg(data);
         }
         return 1;
     }
@@ -116,16 +120,16 @@ int protocol_motor_filter(char data[], int nBytes, client interface if_motor mot
  *  @param[in, out] data    Buffer with the receive packet.
  *  @param[in]      reply   Answer from led_server().
  */
-void protocol_make_packet(char data[], int reply)
+void protocol_make_packet(char data[])
 {
-    char txbuffer[TX_SIZE];
+    char tmp[BUFFER_SIZE];
 
-    memset(txbuffer, 0, TX_SIZE);
+    memset(tmp, 0, BUFFER_SIZE);
 
     /* Change order of MAC-addresses for reply packet */
-    memcpy((txbuffer + SRC_MAC_BYTE), (data + DST_MAC_BYTE), 6);
-    memcpy((txbuffer + DST_MAC_BYTE), (data + SRC_MAC_BYTE), 6);
-
+    memcpy((tmp + SRC_MAC_BYTE), (data + DST_MAC_BYTE), 6);
+    memcpy((tmp + DST_MAC_BYTE), (data + SRC_MAC_BYTE), 6);
+/*
     // Copy ethernet type
     txbuffer[ETHERTYPE_BYTE]    = data[ETHERTYPE_BYTE];
     txbuffer[ETHERTYPE_BYTE +1] = data[ETHERTYPE_BYTE +1];
@@ -134,8 +138,8 @@ void protocol_make_packet(char data[], int reply)
     txbuffer[OFFSET_PAYLOAD+1] = reply >> 16;
     txbuffer[OFFSET_PAYLOAD+2] = reply >> 8;
     txbuffer[OFFSET_PAYLOAD+3] = reply;
-
-    memcpy(data, txbuffer, TX_SIZE);
+*/
+    memcpy(data, tmp, 12);
 }
 
 /**
@@ -144,22 +148,22 @@ void protocol_make_packet(char data[], int reply)
  *  @param dataToP2     Channel for port 2.
  *  @param[in] addr     Interface with the mac-address from filter().
  */
-void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_addr addr)
+void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_tx tx)
 {
-    unsigned int txbuffer[TX_SIZE];
+    char txbuffer[BUFFER_SIZE];
 
     while (1)
     {
         select
         {
-            case addr.msg(char address[], int reply):
-                memcpy(txbuffer, address, 14);
-                protocol_make_packet((txbuffer, char[]), reply);
+            case tx.msg(char reply[]):
+                memcpy(txbuffer, reply, BUFFER_SIZE);
+                protocol_make_packet(txbuffer);
                 break;
         }
 
-        passFrameToHub(dataToP1, (txbuffer, char[]), TX_SIZE);
-        passFrameToHub(dataToP2, (txbuffer, char[]), TX_SIZE);
+        passFrameToHub(dataToP1, txbuffer, BUFFER_SIZE);
+        passFrameToHub(dataToP2, txbuffer, BUFFER_SIZE);
     }
 }
 
@@ -172,11 +176,11 @@ void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_addr 
  */
 void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,
                       chanend foe_comm, chanend foe_signal,
-                      chanend c_flash_data, chanend c_nodes,
-                      client interface motor, client interface addr)
+                      chanend c_flash_data, chanend c_nodes[],
+                      client interface if_motor motor, client interface if_tx tx)
 {
     int nbytes;
-    unsigned rxbuffer[400];
+    unsigned rxbuffer[BUFFER_SIZE];
 
     while(1)
     {
@@ -189,8 +193,8 @@ void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,
                            break;
        }
 
-       if (!protocol_motor_filter((rxbuffer, char[]), nbytes, motor, addr))
-                flash_filter((rxbuffer,char[]), foe_comm, foe_signal, c_flash_data, c_nodes, nbytes, addr);
+       if (!protocol_motor_filter((rxbuffer, char[]), nbytes, motor, tx))
+                flash_filter((rxbuffer,char[]), foe_comm, c_flash_data, nbytes, tx);
 
     }
 }
