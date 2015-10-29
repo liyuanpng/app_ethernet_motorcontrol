@@ -29,7 +29,6 @@
 #include <internal_config.h>
 #include <adc_server_ad7949.h>
 #include <adc_client_ad7949.h>
-#include <torque_ctrl_server.h>
 
 #include <position_ctrl_client.h>
 #include <position_ctrl_server.h>
@@ -37,6 +36,7 @@
 #include <bldc_motor_config.h>
 
 #include "protocol.h"
+#include "flash_over_ethernet.h"
 
 
 on stdcore[IFM_TILE]: clock clk_adc = XS1_CLKBLK_1;
@@ -56,7 +56,7 @@ ethernet_reset_interface_t eth_rst_p2 = ETHERNET_DEFAULT_RESET_INTERFACE_INIT_P2
  *  @brief Initialized the positioning server.
  *  @param[out] c_position_ctrl     Channel for the position controlling.
  */
-void init_postioning(chanend c_position_ctrl)
+void init_positioning(chanend c_position_ctrl)
 {
     hall_par hall_params;
     qei_par qei_params;
@@ -94,45 +94,42 @@ int main()
     interface if_motor motor;
     interface if_tx tx;
 
-    chan foe_comm, foe_signal, c_flash_data, c_nodes[1];  // Firmware Update channels
+    chan foe_comm, c_flash_data;  // Firmware Update channels
 
-  par
+    par
     {
-      /************************************************************
-       * COM TILE - MAC LAYER
-       ************************************************************/
-      on tile[COM_TILE]:
-      {
-
-        //printstr("MAC on P1: "); showMAC(MAC_ADDRESS_P1);
-        //printstr("MAC on P2: "); showMAC(MAC_ADDRESS_P2);
-
-
-        // Sequential Initialization stage for both ports
-        // Ethernet PHY transceiver reset
-        eth_phy_reset(eth_rst_p1); // Port 1
-        eth_phy_reset(eth_rst_p2); // Port 2
-
-        // Initialize SMI for communication. These functions belong to module_ethernet_smi.
-        smi_init(smi_p1); // Port 1
-        smi_init(smi_p2); // Port 2
-
-        // Set config over SMI. These functions belong to module_ethernet_smi.
-        eth_phy_config(1, smi_p1); // Port 1
-        eth_phy_config(1, smi_p2); // Port 2
-
-        // Parallel Ethernet server loops
-        par
+        /************************************************************
+        * COM TILE - MAC LAYER
+        ************************************************************/
+        on tile[COM_TILE]:
         {
-            // Port 1
-            ethernet_server_p1(mii_p1, smi_p1, MAC_INPUT, rxP1, txP1);
-            // Port 2
-            ethernet_server_p2(mii_p2, smi_p2, MAC_OUTPUT, rxP2, txP2);
+            //printstr("MAC on P1: "); showMAC(MAC_ADDRESS_P1);
+            //printstr("MAC on P2: "); showMAC(MAC_ADDRESS_P2);
 
-            //firmware_update_loop(p_spi_flash, foe_comm, foe_signal, c_flash_data, c_nodes, null); // firmware update over ethernet
+            // Sequential Initialization stage for both ports
+            // Ethernet PHY transceiver reset
+            eth_phy_reset(eth_rst_p1); // Port 1
+            eth_phy_reset(eth_rst_p2); // Port 2
 
+            // Initialize SMI for communication. These functions belong to module_ethernet_smi.
+            smi_init(smi_p1); // Port 1
+            smi_init(smi_p2); // Port 2
+
+            // Set config over SMI. These functions belong to module_ethernet_smi.
+            eth_phy_config(1, smi_p1); // Port 1
+            eth_phy_config(1, smi_p2); // Port 2
+
+            // Parallel Ethernet server loops
+            par
+            {
+                // Port 1
+                //ethernet_server_p1(mii_p1, smi_p1, MAC_INPUT, rxP1, txP1);
+                // Port 2
+                //ethernet_server_p2(mii_p2, smi_p2, MAC_OUTPUT, rxP2, txP2);
+
+                //firmware_update_loop(p_spi_flash, foe_comm, c_flash_data, null); // firmware update over ethernet
+            }
         }
-      }
 
         /************************************************************
          * CLIENT TILE - ETHERNET HUB LAYER
@@ -140,7 +137,7 @@ int main()
         // Ethernet hub server and protocol server
         on tile[1]:
         {
-            init_postioning(c_position_ctrl);
+            init_positioning(c_position_ctrl);
 
             par
             {
@@ -153,7 +150,7 @@ int main()
 
                 protocol_send(dataToP1, dataToP2, tx);
 
-                protocol_fetcher(dataFromP1, dataFromP2, foe_comm, foe_signal, c_flash_data, c_nodes, motor, tx);
+                protocol_fetcher(dataFromP1, dataFromP2, foe_comm, c_flash_data, motor, tx);
             }
         }
 
@@ -165,10 +162,8 @@ int main()
         {
             par
             {
-
                 /* Position Control Loop */
                 {
-
                      ctrl_par position_ctrl_params;
                      hall_par hall_params;
                      qei_par qei_params;
@@ -183,12 +178,9 @@ int main()
                      // Control Loop
                      position_control(position_ctrl_params, hall_params, qei_params, SENSOR_USED, c_hall_p3,\
                              c_qei_p3, c_position_ctrl, c_commutation_p3);
-
                 }
             }
-
         }
-
 
         on tile[IFM_TILE]:
         {
@@ -225,7 +217,6 @@ int main()
                     run_hall(c_hall_p1, c_hall_p2, c_hall_p3, c_hall_p4, c_hall_p5, c_hall_p6, p_ifm_hall, hall_params); // channel priority 1,2..5
                 }
 
-
                 /* QEI Server */
                 {
                     qei_par qei_params;
@@ -236,5 +227,5 @@ int main()
         }
     }
 
-  return 0;
+    return 0;
 }

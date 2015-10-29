@@ -26,8 +26,7 @@ void protocol_server(server interface if_motor motor, chanend c_position_ctrl);
 int protocol_motor_filter(char data[], int nBytes, client interface if_motor motor, client interface if_tx tx);
 void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_tx tx);
 void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,
-                      chanend foe_comm, chanend foe_signal,
-                      chanend c_flash_data, chanend c_nodes[],
+                      chanend foe_comm, chanend c_flash_data,
                       client interface if_motor motor, client interface if_tx tx);
 
 #endif /* PROTOCOL_H_ */

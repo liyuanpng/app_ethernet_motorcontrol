@@ -163,7 +163,7 @@ void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_tx tx
         }
 
         passFrameToHub(dataToP1, txbuffer, BUFFER_SIZE);
-        passFrameToHub(dataToP2, txbuffer, BUFFER_SIZE);
+        //passFrameToHub(dataToP2, txbuffer, BUFFER_SIZE);
     }
 }
 
@@ -175,8 +175,7 @@ void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_tx tx
  *  @param[out]     addr     Interface client for address communication with send().
  */
 void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,
-                      chanend foe_comm, chanend foe_signal,
-                      chanend c_flash_data, chanend c_nodes[],
+                      chanend foe_comm, chanend c_flash_data,
                       client interface if_motor motor, client interface if_tx tx)
 {
     int nbytes;
@@ -189,12 +188,12 @@ void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,
            case fetchFrameFromHub(dataFromP1, rxbuffer, nbytes):
                            break;
 
-           case fetchFrameFromHub(dataFromP2, rxbuffer, nbytes):
-                           break;
+           //case fetchFrameFromHub(dataFromP2, rxbuffer, nbytes):
+           //                break;
        }
 
-       if (!protocol_motor_filter((rxbuffer, char[]), nbytes, motor, tx))
-                flash_filter((rxbuffer,char[]), foe_comm, c_flash_data, nbytes, tx);
+       //protocol_motor_filter((rxbuffer, char[]), nbytes, motor, tx);
+       flash_filter((rxbuffer,char[]), foe_comm, c_flash_data, nbytes, tx);
 
     }
 }

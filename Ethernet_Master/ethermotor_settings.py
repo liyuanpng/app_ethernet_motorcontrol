@@ -3,7 +3,6 @@ dst_addresses = ["f0:ca:f0:ca:f0:80",
                  "f0:ca:f0:ca:f0:82",
                  "f0:ca:f0:ca:f0:84",
                  "f0:ca:f0:ca:f0:86",
-                 #"CA:FE:CA:FE:CA:87",
                  "f0:ca:f0:ca:f0:88",
                  "f0:ca:f0:ca:f0:90",
                  "f0:ca:f0:ca:f0:92"]

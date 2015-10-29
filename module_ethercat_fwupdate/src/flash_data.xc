@@ -7,6 +7,8 @@
 
 #if 1
 
+//#define PRINTS // NO space for prints!
+
 #include <string.h>
 #include <print.h>
 
@@ -78,7 +80,11 @@ void config_to_array()
     for (int i=0, k=0; i<(5*no_of_data); i+=5, k++) {
         param_read = read_data_array(i, data_array);
         if( (data_array[4 + 5*(k/8)] & 1<<(k%8)) >> (k%8) ) // updated
+        {
+            #ifdef PRINTS
             printhexln(param_read);
+            #endif
+        }
     }
 }
 
@@ -96,15 +102,19 @@ void store_and_read_data(chanend c_flash_data)
 
     // Store data on to flash
     status = write_data_to_flash(c_flash_data, page, data, data_length);
+    #ifdef PRINTS
     printintln(status);
+    #endif
 
     memset(data, 0, data_length); /* clear array */
 
     // Retrieve data from flash
     status = read_data_flash(c_flash_data, page, data, data_length);
+    #ifdef PRINTS
     for (int i=0; i<data_length; i++) {
         printhexln(data[i]);
     }
+    #endif
 }
 
 #endif

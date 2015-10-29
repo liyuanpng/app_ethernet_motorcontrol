@@ -10,13 +10,12 @@
 #include <ethernet_config.h>
 #include <print.h>
 #include <flashlib.h>
-#include <flash.h>
 
 #include <xs1.h>
 #include "flash_somanet.h"
 #include "flash_write.h"
 
-#define DEBUG
+//#define DEBUG
 
 #define START_FLASH     12
 #define END_FLASH       26

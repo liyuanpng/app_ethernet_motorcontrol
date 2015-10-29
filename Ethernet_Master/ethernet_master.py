@@ -1,4 +1,5 @@
 import socket
+import fcntl, struct
 
 class Ethernet_Master:
     def __init__(self, interface, ethertype):
@@ -44,7 +45,7 @@ class Ethernet_Master:
     #   @return     The packet as a byte string.
     # 
     def make_packet(self, address, payload):
-        val = address + self.__src_adr + self.__ethertype + payload
+        val = address + self.__src_addr + self.__ethertype + payload
         return self.__strToHex(val)
 
     ##

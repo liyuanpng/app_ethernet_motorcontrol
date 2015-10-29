@@ -13,6 +13,8 @@
 #include <string.h>
 #include <print.h>
 
+//#define PRINT // No space for prints!
+
 const int page_size = 256;
 
 void flash_setup(int factory, fl_SPIPorts *SPI)  // could have arguments to specify the upgarde image
@@ -24,7 +26,9 @@ void flash_setup(int factory, fl_SPIPorts *SPI)  // could have arguments to spec
         fl_setProtection(0);
         fl_eraseAll();
     } else {
+        #ifdef PRINT
         printstrln("could not connect flash");
+        #endif
         exit(1);
     }
 }
@@ -32,7 +36,9 @@ void flash_setup(int factory, fl_SPIPorts *SPI)  // could have arguments to spec
 void connect_to_flash(fl_SPIPorts *SPI)
 {
     if (fl_connect(SPI) != 0) {
+        #ifdef PRINT
         printstrln("could not connect flash");
+        #endif
         exit(1);
     }
 }
@@ -70,25 +76,33 @@ int __write_data_flash(fl_SPIPorts *SPI, unsigned char data[256], int data_lengt
     // Get the FLASH data partition size
     int temp = fl_getDataPartitionSize();
 
+    #ifdef PRINT
     printstr("FLASH data partition size: ");
     printint(temp);
     printstrln(" bytes.");
+    #endif
 
     if (page == 0) {
         if (fl_eraseAllDataSectors() != 0) {
+            #ifdef PRINT
             printstrln("Could not erase the data partition");
+            #endif
             status = 0;
         }
     }
     // Write to the data partition
     if (fl_writeDataPage(page, data_page) != 0) {
+        #ifdef PRINT
         printstrln("Could not write the data partition");
+        #endif
         status = 0;
     }
 
     // Read from the data partition and Verify
     if (fl_readDataPage(page, data_page) != 0) {
+        #ifdef PRINT
         printstrln("Could not read the data partition");
+        #endif
         status = 0;
     }
 
@@ -117,13 +131,17 @@ int __read_data_flash(fl_SPIPorts *SPI, int page, unsigned char data[256])
 
     // Get the FLASH data partition size
     temp = fl_getDataPartitionSize();
+    #ifdef PRINT
     printstr("FLASH data partition size: ");
     printint(temp);
     printstrln(" bytes.");
+    #endif
 
     // Read from the data partition and Verify
     if (fl_readDataPage(page, data) != 0) {
+        #ifdef PRINT
         printstrln("Could not read the data partition");
+        #endif
         status = 0;
     }
 
