@@ -6,9 +6,9 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include <flashlib.h>
+#include "diet_flashlib/diet_flashlib.h"
 #include <platform.h>
-#include <flash.h>
+#include "diet_flashlib/diet_flash.h"
 #include <flash_somanet.h>
 #include <string.h>
 #include <print.h>
@@ -73,10 +73,9 @@ int __write_data_flash(fl_SPIPorts *SPI, unsigned char data[256], int data_lengt
 
     connect_to_flash(SPI);
 
+    #ifdef PRINT
     // Get the FLASH data partition size
     int temp = fl_getDataPartitionSize();
-
-    #ifdef PRINT
     printstr("FLASH data partition size: ");
     printint(temp);
     printstrln(" bytes.");
