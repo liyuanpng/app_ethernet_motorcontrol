@@ -88,6 +88,6 @@ void ethernetHUB(chanend dataP1ToApp, chanend appDataToP1,
       //receiverP2(rxMACP2, dataBridge[0], dataP2ToApp);
 
       //transmitterP2(txMACP2, dataBridge[1], appDataToP2);
-      receiverP1(rxMACP1, dataBridge[1], dataP1ToApp);
+      receiverP1(rxMACP1, dataBridge[0], dataP1ToApp);
     }
 }

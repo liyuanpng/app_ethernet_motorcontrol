@@ -29,6 +29,7 @@ void _init_macAddress(char mac[6], const unsigned char my_mac[6]){
 }
 extern void _mac_set_macaddr_lite(unsigned char macaddr[]);
 
+
 static void _the_server(chanend cIn, chanend cOut, chanend cNotifications,
 		smi_interface_t &?smi,
 		chanend appIn, chanend appOut, char mac_address[6]) {
@@ -50,17 +51,18 @@ static void _the_server(chanend cIn, chanend cOut, chanend cNotifications,
     while (1) {
         select {
 		case linkcheck_timer when timerafter(linkcheck_time) :> void :
-                  if (!isnull(smi))
+            if (!isnull(smi))
 			{
-				static int phy_status = 0;
-				int new_status = smi_check_link_state(smi);
-				if (new_status != phy_status) {
-                                  outuint(appIn, -1);
-                                  appIn :> int _;
-                                  appIn <: new_status;
-                                  appIn <: 0;
-                                  phy_status = new_status;
-				}
+                static int phy_status = 0;
+                int new_status = smi_check_link_state(smi);
+                if (new_status != phy_status)
+                {
+                    outuint(appIn, -1);
+                    appIn :> int _;
+                    appIn <: new_status;
+                    appIn <: 0;
+                    phy_status = new_status;
+                }
 			}
 			linkcheck_time += 10000000;
 			break;
@@ -108,6 +110,7 @@ static void _the_server(chanend cIn, chanend cOut, chanend cNotifications,
     } 
 }
 
+
 void _mii_single_server(out port ?p_mii_resetn,
                      smi_interface_t &?smi,
                      mii_interface_lite_t &m,
@@ -128,6 +131,7 @@ void _mii_single_server(out port ?p_mii_resetn,
     }
 
 }
+
 
 void ethernet_server_p1_lite(mii_interface_lite_t &m,
                           smi_interface_t &?smi,

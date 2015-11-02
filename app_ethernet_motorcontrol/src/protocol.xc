@@ -22,6 +22,7 @@
 #include "flash_over_ethernet.h"
 
 #define BUFFER_SIZE 400
+#define HTONL(x)    (( (x & 0xff) << 24) | (((x >> 8) & 0xff) << 16) | (((x >> 16) & 0xff) << 8) | ((x >> 24) & 0xff) )
 
 
 int protocol_controlling(chanend c_position_ctrl, char cmd, int param)
@@ -92,7 +93,7 @@ void protocol_server(server interface if_motor motor, chanend c_position_ctrl)
  */
 int protocol_motor_filter(char data[], int nBytes, client interface if_motor motor, client interface if_tx tx)
 {
-    int reply;
+    int reply, tmp;
     int16_t param = 0;
 
     if (isForMe(data, MAC_INPUT) && isSNCN(data))
@@ -101,12 +102,18 @@ int protocol_motor_filter(char data[], int nBytes, client interface if_motor mot
         if (data[OFFSET_PAYLOAD] != 0x0)
         {
             // To get negative numbers, we need here a 16-bit variable.
-            param = (data[OFFSET_PAYLOAD+1] << 8 | data[OFFSET_PAYLOAD+2]);
-
+            param = (data[OFFSET_PAYLOAD+2] << 8 | data[OFFSET_PAYLOAD+3]);
+            printintln(param);
             // Send data to motor server and receive answer.
             reply = motor.msg(data[OFFSET_PAYLOAD], param);
+            printintln(reply);
+            tmp = HTONL(reply);
             // Send addresses to send function.
-            memcpy((data + OFFSET_PAYLOAD), (char *) &reply, 4);
+            memcpy((data + OFFSET_PAYLOAD), (char *) &tmp, 4);
+
+            for (int i=0; i < 20; i++)
+                printhex(data[i]);
+            printcharln(' ');
             tx.msg(data);
         }
         return 1;

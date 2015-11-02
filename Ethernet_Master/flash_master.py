@@ -8,6 +8,7 @@ from ethermotor_settings import *
 
 
 class Firmware_Update(Ethernet_Master):
+    package_size = 256
     def __init__(self, interface, filepath):
         Ethernet_Master.__init__(self, interface, "0801")
         self.__filepath = filepath
@@ -38,22 +39,23 @@ class Firmware_Update(Ethernet_Master):
         size = self.get_file_size()
         print "Send file with %s bytes." % size
 
-        protocol_data = "F103" + hex(size)[2:] + "0001"
+        protocol_data = "F103" + "0000" + hex(size)[2:] + "0000"
         print protocol_data
         address = dst_addresses[node-1]
         print address
 
         #while size:
-        if size > 380:
-            payload = self.read(380)
+        if size > Firmware_Update.package_size:
+            payload = self.read(Firmware_Update.package_size)
             payload = protocol_data + payload.encode('hex')
-            size -= 380
+            size -= Firmware_Update.package_size
         else:
             payload = self.read(size)
             payload = protocol_data + payload.encode('hex')
             size = 0
 
         self.send(address, payload)
+
         return True
             
 

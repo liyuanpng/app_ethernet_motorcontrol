@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <diet_flashlib/diet_flashlib.h>
+#include <flashlib.h>
 #include <xccompat.h>
 
 /**

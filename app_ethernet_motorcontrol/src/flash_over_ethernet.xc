@@ -87,56 +87,51 @@ void flash_read(char data[], chanend c_flash_data)
 void flash_write(char data[], chanend c_flash_data, int nbytes)
 {
     static int size = 0;
+    static int size_rest = 0;
     int page = 0;
     int cmd = 0;
     int status = 0;
     static int state = 0;
     int byte_count = 0;
 
-    // State 0 is first packet.
-    // Reads the protocol data
-    if (state == 0)
-    {
-        cmd = data[OFFSET_PAYLOAD + OFFSET_CMD];
-        c_flash_data <: cmd;
+    // Get Command (read or write)
+    cmd = data[OFFSET_PAYLOAD + OFFSET_CMD];
+    c_flash_data <: cmd;
 
+    // Get size (amount of bytes). Only when
+    if (size_rest == 0)
+    {
         size = (data[OFFSET_PAYLOAD + OFFSET_SIZE] << 24
               | data[OFFSET_PAYLOAD + OFFSET_SIZE+1] << 16
               | data[OFFSET_PAYLOAD + OFFSET_SIZE+2] << 8
               | data[OFFSET_PAYLOAD + OFFSET_SIZE+3] << 0);
-        c_flash_data <: size;
-
-        page = data[OFFSET_PAYLOAD + OFFSET_PAGE] << 8 | data[OFFSET_PAYLOAD + OFFSET_PAGE+1] << 0;
-        c_flash_data <: page;
-
-        state = 1;
+        size_rest = size;
     }
-    // Writes the flash data
-    if (state == 1)
+    printintln(size);
+    byte_count = 256;
+    if (size_rest < byte_count)
+        byte_count = size_rest;
+    c_flash_data <: byte_count;
+
+
+    page = data[OFFSET_PAYLOAD + OFFSET_PAGE] << 8 | data[OFFSET_PAYLOAD + OFFSET_PAGE+1] << 0;
+    c_flash_data <: page;
+
+    printintln(page);
+
+    for (int i=OFFSET_PAYLOAD+OFFSET_DATA; i<byte_count+OFFSET_PAYLOAD+OFFSET_DATA; i++)
     {
-        if (size > 0)
-        {
-            byte_count = BUFFER_SIZE;
-            // If size smaller BUFFER_SIZE then set byte_count to size.
-            if (size < BUFFER_SIZE)
-                byte_count = size;
-
-            for (int i=OFFSET_DATA; i<byte_count; i++)
-                c_flash_data <: data[i];
-
-            size -= byte_count;
-        }
-        else
-        {
-            c_flash_data :> status;
-            state = 0;
-        }
+        c_flash_data <: data[i];
     }
+    size_rest -= byte_count;
+
+    c_flash_data :> status;
+
+    printintln(status);
 }
 
 void flash_filter(char data[], chanend foe_comm, chanend c_flash_data, int nbytes, client interface if_tx tx)
 {
-    //TODO Implementiere den ganzen Flash-Kram.
     if (isForMe(data, MAC_INPUT) && isSNCN(data))
     {
         // Send protocol data to motor function.
@@ -144,12 +139,14 @@ void flash_filter(char data[], chanend foe_comm, chanend c_flash_data, int nbyte
         {
             if (data[OFFSET_PAYLOAD + OFFSET_CMD] == 1)
             {
+                printintln(1);
                 flash_read(data, c_flash_data);
                 tx.msg(data);
             }
 
             if (data[OFFSET_PAYLOAD + OFFSET_CMD] == 3)
             {
+                printintln(3);
                 flash_write(data, c_flash_data, nbytes);
                 tx.msg(data);
             }
@@ -312,7 +309,6 @@ static unsigned check_file_access(fl_SPIPorts &SPI, chanend foe_comm, unsigned a
 }
 
 
-
 void firmware_update_loop(fl_SPIPorts &SPI, chanend foe_comm, chanend c_flash_data, chanend ?reset)
 {
     timer t;
@@ -405,6 +401,7 @@ void firmware_update_loop(fl_SPIPorts &SPI, chanend foe_comm, chanend c_flash_da
             else if (command == 3)
             { // write
                 c_flash_data :> data_length;
+                printintln(data_length);
                 c_flash_data :> page;
                 // read stream of data page
 
@@ -412,7 +409,9 @@ void firmware_update_loop(fl_SPIPorts &SPI, chanend foe_comm, chanend c_flash_da
                 {
                     c_flash_data :> data[i];
                 }
+
                 status = __write_data_flash(SPI, data, data_length, page);
+
                 c_flash_data <: status;
             }
             break;

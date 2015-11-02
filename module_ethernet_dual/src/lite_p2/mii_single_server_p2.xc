@@ -29,6 +29,7 @@ void init_macAddress(char mac[6], const unsigned char my_mac[6]){
 
 extern void mac_set_macaddr_lite(unsigned char macaddr[]);
 
+
 static void the_server(chanend cIn, chanend cOut, chanend cNotifications,
 		smi_interface_t &?smi,
 		chanend appIn, chanend appOut, char mac_address[6]) {
@@ -130,6 +131,7 @@ void mii_single_server(out port ?p_mii_resetn,
     }
 
 }
+
 
 void ethernet_server_p2_lite(mii_interface_lite_t &m,
                           smi_interface_t &?smi,

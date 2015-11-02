@@ -6,14 +6,16 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include "diet_flashlib/diet_flashlib.h"
+//#include "diet_flashlib/diet_flashlib.h"
+#include <flashlib.h>
 #include <platform.h>
-#include "diet_flashlib/diet_flash.h"
+//#include "diet_flashlib/diet_flash.h"
+#include <flash.h>
 #include <flash_somanet.h>
 #include <string.h>
 #include <print.h>
 
-//#define PRINT // No space for prints!
+#define PRINT // No space for prints!
 
 const int page_size = 256;
 
@@ -62,6 +64,7 @@ int __write_data_flash(fl_SPIPorts *SPI, unsigned char data[256], int data_lengt
 
     int status = 1;             /* SUCCESS == 1 */
 
+
     /* Initialise the my_page array */
     for (int i=0; i<page_size; i++ ) {
         if (i < data_length) {
@@ -72,6 +75,11 @@ int __write_data_flash(fl_SPIPorts *SPI, unsigned char data[256], int data_lengt
     }
 
     connect_to_flash(SPI);
+
+    printstr("Pages: ");
+    printintln(fl_getNumPages());
+    //printintln(fl_getFullStatus());
+    //printintln(fl_getDataPartitionBase());
 
     #ifdef PRINT
     // Get the FLASH data partition size
@@ -89,6 +97,7 @@ int __write_data_flash(fl_SPIPorts *SPI, unsigned char data[256], int data_lengt
             status = 0;
         }
     }
+
     // Write to the data partition
     if (fl_writeDataPage(page, data_page) != 0) {
         #ifdef PRINT

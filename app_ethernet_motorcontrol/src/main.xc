@@ -30,6 +30,7 @@
 #include <adc_server_ad7949.h>
 #include <adc_client_ad7949.h>
 
+//#include <overlay_flash.h>
 #include <position_ctrl_client.h>
 #include <position_ctrl_server.h>
 //Configure your motor parameters in config/bldc_motor_config.h
@@ -77,7 +78,7 @@ void init_positioning(chanend c_position_ctrl)
 }
 
 
-int main()
+int main(void)
 {
     // Motor control channels
     chan c_adc, c_adc_1;
@@ -96,6 +97,7 @@ int main()
 
     chan foe_comm, c_flash_data;  // Firmware Update channels
 
+
     par
     {
         /************************************************************
@@ -105,6 +107,9 @@ int main()
         {
             //printstr("MAC on P1: "); showMAC(MAC_ADDRESS_P1);
             //printstr("MAC on P2: "); showMAC(MAC_ADDRESS_P2);
+            //fl_SPIPorts * movable spi_ports_ptr = &p_spi_flash;
+
+            //overlay_flash_init(move(spi_ports_ptr), 100, 8);
 
             // Sequential Initialization stage for both ports
             // Ethernet PHY transceiver reset
@@ -123,11 +128,11 @@ int main()
             par
             {
                 // Port 1
-                //ethernet_server_p1(mii_p1, smi_p1, MAC_INPUT, rxP1, txP1);
+                ethernet_server_p1(mii_p1, smi_p1, MAC_INPUT, rxP1, txP1);
                 // Port 2
                 //ethernet_server_p2(mii_p2, smi_p2, MAC_OUTPUT, rxP2, txP2);
 
-                //firmware_update_loop(p_spi_flash, foe_comm, c_flash_data, null); // firmware update over ethernet
+                firmware_update_loop(p_spi_flash, foe_comm, c_flash_data, null); // firmware update over ethernet
             }
         }
 
