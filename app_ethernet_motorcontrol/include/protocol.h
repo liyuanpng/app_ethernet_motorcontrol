@@ -19,7 +19,7 @@ interface if_motor
 
 interface if_tx
 {
-    void msg(char reply[]);
+    void msg(char reply[], int nbytes);
 };
 
 void protocol_server(server interface if_motor motor, chanend c_position_ctrl);

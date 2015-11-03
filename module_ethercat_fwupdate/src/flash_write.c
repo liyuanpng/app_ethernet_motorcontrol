@@ -15,7 +15,7 @@
 #include <string.h>
 #include <print.h>
 
-#define PRINT // No space for prints!
+//#define PRINT // No space for prints!
 
 const int page_size = 256;
 
@@ -76,11 +76,6 @@ int __write_data_flash(fl_SPIPorts *SPI, unsigned char data[256], int data_lengt
 
     connect_to_flash(SPI);
 
-    printstr("Pages: ");
-    printintln(fl_getNumPages());
-    //printintln(fl_getFullStatus());
-    //printintln(fl_getDataPartitionBase());
-
     #ifdef PRINT
     // Get the FLASH data partition size
     int temp = fl_getDataPartitionSize();
@@ -121,7 +116,6 @@ int __write_data_flash(fl_SPIPorts *SPI, unsigned char data[256], int data_lengt
                 break;
             }
         }
-        // printhexln(data_page[i]);
     }
     return status;
 }
@@ -138,8 +132,8 @@ int __read_data_flash(fl_SPIPorts *SPI, int page, unsigned char data[256])
     connect_to_flash(SPI);
 
     // Get the FLASH data partition size
-    temp = fl_getDataPartitionSize();
     #ifdef PRINT
+    temp = fl_getDataPartitionSize();
     printstr("FLASH data partition size: ");
     printint(temp);
     printstrln(" bytes.");

@@ -104,7 +104,7 @@ int protocol_motor_filter(char data[], int nBytes, client interface if_motor mot
             // To get negative numbers, we need here a 16-bit variable.
             param = (data[OFFSET_PAYLOAD+2] << 8 | data[OFFSET_PAYLOAD+3]);
             printintln(param);
-            // Send data to motor server and receive answer.
+            // Send data to motor server and receive answer.n
             reply = motor.msg(data[OFFSET_PAYLOAD], param);
             printintln(reply);
             tmp = HTONL(reply);
@@ -114,7 +114,7 @@ int protocol_motor_filter(char data[], int nBytes, client interface if_motor mot
             for (int i=0; i < 20; i++)
                 printhex(data[i]);
             printcharln(' ');
-            tx.msg(data);
+            tx.msg(data, 20);
         }
         return 1;
     }
@@ -158,18 +158,22 @@ void protocol_make_packet(char data[])
 void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_tx tx)
 {
     char txbuffer[BUFFER_SIZE];
+    int nBytes;
 
     while (1)
     {
         select
         {
-            case tx.msg(char reply[]):
-                memcpy(txbuffer, reply, BUFFER_SIZE);
+            case tx.msg(char reply[], int nbytes):
+                memcpy(txbuffer, reply, nbytes);
+                nBytes = nbytes;
                 protocol_make_packet(txbuffer);
                 break;
         }
+        if (nBytes < 64)
+            nBytes = 64;
 
-        passFrameToHub(dataToP1, txbuffer, BUFFER_SIZE);
+        passFrameToHub(dataToP1, txbuffer, nBytes);
         //passFrameToHub(dataToP2, txbuffer, BUFFER_SIZE);
     }
 }

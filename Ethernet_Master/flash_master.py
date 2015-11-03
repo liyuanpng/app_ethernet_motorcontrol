@@ -2,6 +2,7 @@ import argparse
 import socket
 import traceback
 import os
+import sys
 from ethernet_master import *
 from ethermotor_settings import *
 
@@ -35,27 +36,49 @@ class Firmware_Update(Ethernet_Master):
     def scan_slaves(self):
         pass
 
+    def progress_bar(self, progress, max_val):
+        sys.stdout.write("\r[%-50s] %d%%" % ('='*((progress*50)/max_val), ((progress*100)/max_val)))
+        sys.stdout.flush()
+
+    def receive_image(self, node):
+        pass
+
     def send_image(self, node):
-        size = self.get_file_size()
+        rest_size = self.get_file_size()
+        size = rest_size
         print "Send file with %s bytes." % size
 
-        protocol_data = "F103" + "0000" + hex(size)[2:] + "0000"
+        protocol_data = "F103" + "%08X" % size
         print protocol_data
         address = dst_addresses[node-1]
         print address
+        page = 0
 
-        #while size:
-        if size > Firmware_Update.package_size:
-            payload = self.read(Firmware_Update.package_size)
-            payload = protocol_data + payload.encode('hex')
-            size -= Firmware_Update.package_size
-        else:
-            payload = self.read(size)
-            payload = protocol_data + payload.encode('hex')
-            size = 0
+        #self.setup_progbar()
 
-        self.send(address, payload)
+        while rest_size:            
+            if rest_size > Firmware_Update.package_size:
+                payload = self.read(Firmware_Update.package_size)                
+                rest_size -= Firmware_Update.package_size
+            else:
+                payload = self.read(rest_size)
+                rest_size = 0
 
+            payload = protocol_data + "%04X" % page + payload.encode('hex')
+            page += 1
+
+            self.send(address, payload)
+
+            reply = self.receive()
+            reply = self.byteToHexStr(reply)
+            self.progress_bar(page, size/Firmware_Update.package_size)
+
+            if (reply):
+                if (reply[15*2-1] != '1'):
+                    print "Error"
+
+            
+        sys.stdout.write("\n")
         return True
             
 
@@ -81,7 +104,7 @@ def main():
     fm = Firmware_Update(ifname, path)
 
     fm.set_socket()
-    fm.set_timeout(3)
+    fm.set_timeout(10)
 
     fm.open_file()
 

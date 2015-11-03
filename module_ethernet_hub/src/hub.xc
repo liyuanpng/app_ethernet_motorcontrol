@@ -14,7 +14,7 @@ void receiverP1(chanend rx, chanend toTX, chanend toApp)
       unsigned int nbytes, time;
 
       mac_rx_p1(rx, (rxbuffer, char[]), nbytes, src_port);
-      passFrameToHub(toTX, (rxbuffer,char[]), nbytes);
+      //passFrameToHub(toTX, (rxbuffer,char[]), nbytes);
       passFrameToHub(toApp, (rxbuffer,char[]), nbytes);
 
     }
@@ -47,7 +47,7 @@ void transmitterP1(chanend tx, chanend fromBridge, chanend fromApp)
   while (1)
     {
       select{
-          case fetchFrameFromHub(fromBridge, txbuffer, nbytes): break;
+          //case fetchFrameFromHub(fromBridge, txbuffer, nbytes): break;
           case fetchFrameFromHub(fromApp, txbuffer, nbytes): break;
       }
       mac_tx_p1(tx, (txbuffer), nbytes, ETH_BROADCAST);

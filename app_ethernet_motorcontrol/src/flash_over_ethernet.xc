@@ -10,6 +10,7 @@
 #include <ethernet_config.h>
 #include <print.h>
 #include <flashlib.h>
+#include <string.h>
 
 #include <xs1.h>
 #include "flash_somanet.h"
@@ -31,68 +32,20 @@
 #define OFFSET_PAGE     6
 #define OFFSET_DATA     8
 
+#define PAGE_SIZE   256
+
 //#define BUFFER_SIZE     400
 
+
 void flash_read(char data[], chanend c_flash_data)
-{
-    static int size = 0;
-    int page = 0;
-    int cmd = 0;
-    int status = 0;
-    static int state = 0;
-    int byte_count = 0;
-
-    // State 0 is first packet.
-    // Reads the protocol data
-    if (state == 0)
-    {
-        cmd = data[OFFSET_PAYLOAD + OFFSET_CMD];
-        c_flash_data <: cmd;
-
-        size = (data[OFFSET_PAYLOAD + OFFSET_SIZE] << 24
-              | data[OFFSET_PAYLOAD + OFFSET_SIZE+1] << 16
-              | data[OFFSET_PAYLOAD + OFFSET_SIZE+2] << 8
-              | data[OFFSET_PAYLOAD + OFFSET_SIZE+3] << 0);
-        c_flash_data <: size;
-
-        page = data[OFFSET_PAYLOAD + OFFSET_PAGE] << 8 | data[OFFSET_PAYLOAD + OFFSET_PAGE+1] << 0;
-        c_flash_data <: page;
-
-        c_flash_data :> status;
-
-        state = 1;
-    }
-    // Reads the flash data
-    if (state == 1)
-    {
-        if (size > 0 && status == 1)
-        {
-            byte_count = BUFFER_SIZE;
-            // If size smaller BUFFER_SIZE then set byte_count to size.
-            if (size < BUFFER_SIZE)
-                byte_count = size;
-
-            for (int i=OFFSET_DATA; i<byte_count; i++)
-                c_flash_data :> data[i];
-
-            size -= byte_count;
-        }
-        else
-        {
-            state = 0;
-        }
-    }
-}
-
-void flash_write(char data[], chanend c_flash_data, int nbytes)
 {
     static int size = 0;
     static int size_rest = 0;
     int page = 0;
     int cmd = 0;
     int status = 0;
-    static int state = 0;
     int byte_count = 0;
+
 
     // Get Command (read or write)
     cmd = data[OFFSET_PAYLOAD + OFFSET_CMD];
@@ -107,31 +60,83 @@ void flash_write(char data[], chanend c_flash_data, int nbytes)
               | data[OFFSET_PAYLOAD + OFFSET_SIZE+3] << 0);
         size_rest = size;
     }
-    printintln(size);
-    byte_count = 256;
-    if (size_rest < byte_count)
-        byte_count = size_rest;
-    c_flash_data <: byte_count;
 
+    byte_count = PAGE_SIZE;
+    if (size_rest < byte_count)
+    {
+        byte_count = size_rest;
+    }
+    c_flash_data <: byte_count;
 
     page = data[OFFSET_PAYLOAD + OFFSET_PAGE] << 8 | data[OFFSET_PAYLOAD + OFFSET_PAGE+1] << 0;
     c_flash_data <: page;
 
-    printintln(page);
+    c_flash_data :> status;
 
+    if (size > 0 && status == 1)
+    {
+        for (int i=OFFSET_PAYLOAD+OFFSET_DATA; i<byte_count+OFFSET_PAYLOAD+OFFSET_DATA; i++)
+            c_flash_data :> data[i];
+
+        size -= byte_count;
+    }
+}
+
+int flash_write(char data[], chanend c_flash_data, int nbytes)
+{
+    static int size = 0;
+    static int size_rest = 0;
+    int page = 0;
+    int cmd = 0;
+    int status = 0;
+    int byte_count = 0;
+
+    // Get Command (read or write)
+    cmd = data[OFFSET_PAYLOAD + OFFSET_CMD];
+    c_flash_data <: cmd;
+
+    // Get size (amount of bytes). Size is in every packet.
+    if (size_rest == 0)
+    {
+        size = (data[OFFSET_PAYLOAD + OFFSET_SIZE] << 24
+              | data[OFFSET_PAYLOAD + OFFSET_SIZE+1] << 16
+              | data[OFFSET_PAYLOAD + OFFSET_SIZE+2] << 8
+              | data[OFFSET_PAYLOAD + OFFSET_SIZE+3] << 0);
+        size_rest = size;
+    }
+    // Page size
+    byte_count = PAGE_SIZE;
+    // If size_rest smaller page size, take the rest.
+    if (size_rest < byte_count)
+    {
+        byte_count = size_rest;
+    }
+    c_flash_data <: byte_count;
+
+    // Get page number
+    page = data[OFFSET_PAYLOAD + OFFSET_PAGE] << 8 | data[OFFSET_PAYLOAD + OFFSET_PAGE+1] << 0;
+    c_flash_data <: page;
+
+    // Send Bytes.
     for (int i=OFFSET_PAYLOAD+OFFSET_DATA; i<byte_count+OFFSET_PAYLOAD+OFFSET_DATA; i++)
     {
         c_flash_data <: data[i];
     }
+
     size_rest -= byte_count;
+
+    if (size_rest == 0)
+        printstrln("Faeddich!");
 
     c_flash_data :> status;
 
-    printintln(status);
+    return status;
 }
 
 void flash_filter(char data[], chanend foe_comm, chanend c_flash_data, int nbytes, client interface if_tx tx)
 {
+    int reply;
+
     if (isForMe(data, MAC_INPUT) && isSNCN(data))
     {
         // Send protocol data to motor function.
@@ -139,16 +144,15 @@ void flash_filter(char data[], chanend foe_comm, chanend c_flash_data, int nbyte
         {
             if (data[OFFSET_PAYLOAD + OFFSET_CMD] == 1)
             {
-                printintln(1);
                 flash_read(data, c_flash_data);
-                tx.msg(data);
+                tx.msg(data, 300);
             }
 
             if (data[OFFSET_PAYLOAD + OFFSET_CMD] == 3)
             {
-                printintln(3);
-                flash_write(data, c_flash_data, nbytes);
-                tx.msg(data);
+                reply = flash_write(data, c_flash_data, nbytes);
+                memcpy((data + OFFSET_PAYLOAD), (char *) &reply, 4);
+                tx.msg(data, 20);
             }
         }
     }
@@ -161,6 +165,26 @@ static inline unsigned char read_from_channel_as_uchar(chanend c)
     int tmp;
     c :> tmp;
     return (unsigned char) tmp;
+}
+
+void flash_firmware(void)
+{
+    unsigned image_size = 44544;
+    unsigned char content[image_size];
+    unsigned current_page = 0;
+    unsigned address = 0;
+
+    flash_setup(1, SPI);
+
+
+    for (int i=0; i<(image_size/PAGE_SIZE); i++)
+    {
+        fl_writePage(address, &content[current_page]);
+        current_page += page_size;
+        address += page_size;
+    }
+
+    fl_endWriteImage();
 }
 
 /*
@@ -195,76 +219,37 @@ static unsigned check_file_access(fl_SPIPorts &SPI, chanend foe_comm, unsigned a
             foe_comm :> start_end_token;
             foe_comm :> command;
 
-            if (command == 1)
-            { // node 1
-                if (start_end_token == START_UPDATE)
-                {
-                    write_state = START_FLASH;
-                }
-                else if (start_end_token == END_UPDATE)
-                {
-                    write_state = IDLE;
-                    fl_endWriteImage();
+            if (start_end_token == START_UPDATE)
+            {
+                write_state = START_FLASH;
+            }
+            else if (start_end_token == END_UPDATE)
+            {
+                write_state = IDLE;
+                fl_endWriteImage();
 
-                    if (!isnull(reset_out))
-                    {
-                        reset_out <: 1;
-                    }
+                if (!isnull(reset_out))
+                {
+                    reset_out <: 1;
                 }
             }
-            /*
-            else if (command >= 2 && command < 18)
-            { // nodes 2 to 18
-                if (start_end_token == START_UPDATE)
-                {
-                    c_nodes[command-2] <: command;
-                    c_nodes[command-2] <: START_UPDATE;
-                }
-                else if (start_end_token == END_UPDATE)
-                {
-                    c_nodes[command-2] <: 100;
-                    c_nodes[command-2] <: 0;
-                    flag_node = 0;
-                    command = 0;
-                }
-            }*/
         }
         else if (size >= 100)
         {
-            if (command == 1)
+            if (write_state == START_FLASH)
             {
-                if (write_state == START_FLASH)
-                {
-                    flash_setup(1, SPI);
-                    address = 0;
-                    write_state = FLASH;
-                }
+                flash_setup(1, SPI);
+                address = 0;
+                write_state = FLASH;
+            }
 
-                for (int i=0; i<size; i++)
-                {
-                    buffer[i] = read_from_channel_as_uchar(foe_comm);
-                }
-
-                flash_buffer(buffer, size, address);
-                address += size;
-            }/*
-            else if (command >= 2 && command < 18 )
+            for (int i=0; i<size; i++)
             {
-                for (int i=0; i<size; i++)
-                {
-                    buffer[i] = read_from_channel_as_uchar(foe_comm);
-                }
-                c_nodes[command-2] <: 10;
-                c_nodes[command-2] :> status;
-                if (status == READY_TO_FLASH)
-                {
-                    c_nodes[command-2] <: size;
-                    for (int i=0; i<size; i++)
-                    {
-                        c_nodes[command-2] <: buffer[i];
-                    }
-                }
-            }*/
+                buffer[i] = read_from_channel_as_uchar(foe_comm);
+            }
+
+            flash_buffer(buffer, size, address);
+            address += size;
         } else {
             for (int i=0; i<size; i++)
             {
@@ -401,7 +386,6 @@ void firmware_update_loop(fl_SPIPorts &SPI, chanend foe_comm, chanend c_flash_da
             else if (command == 3)
             { // write
                 c_flash_data :> data_length;
-                printintln(data_length);
                 c_flash_data :> page;
                 // read stream of data page
 
