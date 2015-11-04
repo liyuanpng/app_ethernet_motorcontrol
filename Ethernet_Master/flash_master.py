@@ -9,8 +9,10 @@ from ethermotor_settings import *
 
 
 class Firmware_Update(Ethernet_Master):
-    package_size = 256
-    def __init__(self, interface, filepath):
+    PACKAGE_SIZE = 256
+    OFFSET_PAYLOAD = 14
+
+    def __init__(self, interface, filepath=''):
         Ethernet_Master.__init__(self, interface, "0801")
         self.__filepath = filepath
         self.__file_handler = None
@@ -57,9 +59,9 @@ class Firmware_Update(Ethernet_Master):
         #self.setup_progbar()
 
         while rest_size:            
-            if rest_size > Firmware_Update.package_size:
-                payload = self.read(Firmware_Update.package_size)                
-                rest_size -= Firmware_Update.package_size
+            if rest_size > Firmware_Update.PACKAGE_SIZE:
+                payload = self.read(Firmware_Update.PACKAGE_SIZE)                
+                rest_size -= Firmware_Update.PACKAGE_SIZE
             else:
                 payload = self.read(rest_size)
                 rest_size = 0
@@ -71,22 +73,46 @@ class Firmware_Update(Ethernet_Master):
 
             reply = self.receive()
             reply = self.byteToHexStr(reply)
-            self.progress_bar(page, size/Firmware_Update.package_size)
+            self.progress_bar(page, size/Firmware_Update.PACKAGE_SIZE)
 
             if (reply):
                 if (reply[15*2-1] != '1'):
-                    print "Error"
+                    sys.stdout.write("Error")
 
             
         sys.stdout.write("\n")
+
+        protocol_data = "F105"
+
+        self.send(address, protocol_data);
+
         return True
+
+    def get_firmware_version(self, node):
+        sys.stdout.write("Get Firmware Version from node ")
+        protocol_data = "F104"
+        address = dst_addresses[node-1]
+        print address
+
+        self.send(address, protocol_data);
+
+        reply = self.receive()
+        if reply:
+            #reply = self.byteToHexStr(reply)
+            print reply[Firmware_Update.OFFSET_PAYLOAD:Firmware_Update.OFFSET_PAYLOAD+5]
+        else:
+            print "ERROR getting Firmware Version"
+
+
+
             
 
 def main():
     parser = argparse.ArgumentParser(description='Synapticon SOMANET Firmware Update over Ethernet')
     parser.add_argument('interface', help='Network interface')
-    parser.add_argument('filepath', help='Firmware filepath')
+    parser.add_argument('-u', help='Firmware filepath', dest='filepath')
     parser.add_argument('-n', type=int, help='Node number', dest='node')
+    parser.add_argument('-v', action='store_true')
     """
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-s', type=int, help='Specify serial number (IP address?) for the ethernet slave', dest='serial')
@@ -99,16 +125,26 @@ def main():
     args = parser.parse_args()
 
     ifname = args.interface
-    path = args.filepath
 
-    fm = Firmware_Update(ifname, path)
+    if args.filepath:
+        path = args.filepath
 
-    fm.set_socket()
-    fm.set_timeout(10)
+        fm = Firmware_Update(ifname, path)
+        fm.set_socket()
+        fm.set_timeout(10)
 
-    fm.open_file()
+        fm.open_file()
 
-    fm.send_image(args.node)
+        fm.send_image(args.node)
+
+
+    if args.v:
+        fm = Firmware_Update(ifname)
+        fm.set_socket()
+        fm.set_timeout(10)
+        fm.get_firmware_version(args.node)
+    
+
 
 
 
