@@ -102,18 +102,20 @@ int protocol_motor_filter(char data[], int nBytes, client interface if_motor mot
         if (data[OFFSET_PAYLOAD] != 0x0)
         {
             // To get negative numbers, we need here a 16-bit variable.
-            param = (data[OFFSET_PAYLOAD+2] << 8 | data[OFFSET_PAYLOAD+3]);
-            printintln(param);
+            param = (data[OFFSET_PAYLOAD+1] << 8 | data[OFFSET_PAYLOAD+2]);
+            //printintln(param);
             // Send data to motor server and receive answer.n
             reply = motor.msg(data[OFFSET_PAYLOAD], param);
-            printintln(reply);
+            //printintln(reply);
             tmp = HTONL(reply);
             // Send addresses to send function.
             memcpy((data + OFFSET_PAYLOAD), (char *) &tmp, 4);
 
+            /*
             for (int i=0; i < 20; i++)
                 printhex(data[i]);
             printcharln(' ');
+            */
             tx.msg(data, 20);
         }
         return 1;
@@ -136,16 +138,6 @@ void protocol_make_packet(char data[])
     /* Change order of MAC-addresses for reply packet */
     memcpy((tmp + SRC_MAC_BYTE), (data + DST_MAC_BYTE), 6);
     memcpy((tmp + DST_MAC_BYTE), (data + SRC_MAC_BYTE), 6);
-/*
-    // Copy ethernet type
-    txbuffer[ETHERTYPE_BYTE]    = data[ETHERTYPE_BYTE];
-    txbuffer[ETHERTYPE_BYTE +1] = data[ETHERTYPE_BYTE +1];
-
-    txbuffer[OFFSET_PAYLOAD] =   reply >> 24;
-    txbuffer[OFFSET_PAYLOAD+1] = reply >> 16;
-    txbuffer[OFFSET_PAYLOAD+2] = reply >> 8;
-    txbuffer[OFFSET_PAYLOAD+3] = reply;
-*/
     memcpy(data, tmp, 12);
 }
 
@@ -203,7 +195,7 @@ void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,
            //                break;
        }
 
-       //protocol_motor_filter((rxbuffer, char[]), nbytes, motor, tx);
+       protocol_motor_filter((rxbuffer, char[]), nbytes, motor, tx);
        flash_filter((rxbuffer,char[]), foe_comm, c_flash_data, nbytes, tx);
 
     }

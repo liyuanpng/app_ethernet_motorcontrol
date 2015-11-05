@@ -7,11 +7,11 @@ from ethermotor_settings import *
 from ethernet_server import *
 
 
-def convertIntoHexStr(val, nbits):
-    res = hex((int(val) + (1 << nbits)) % (1 << nbits))[2:]
-    if len(res) % 2:
-        res = "0" + res
-    return res
+def convertIntoHexStr(val, byte):
+    str_format = '%0' + str(byte*2) + 'X'
+    res = ((int(val) + (1 << byte*8)) % (1 << byte*8))
+    return str_format % res
+
 
 ##
 #   @brief Main function with the loop.
@@ -27,7 +27,7 @@ def main():
     server.set_timeout(3)
 
     server.add_addresses(*dst_addresses)
-    server.add_commands({"node": "\d", "cmd": "\d{1,2}", "motor": "\d", "param": "-?\w{1,5}"})
+    server.add_commands({"node": "\d", "param": "-?\w{1,5}"})
 
     server.add_static_packet({"node": "7", "cmd": "10", "motor": "0", "param": "1000"}, "v1")
     server.add_static_packet({"node": "7", "cmd": "10", "motor": "0", "param": "-1000"}, "v2")
@@ -37,10 +37,8 @@ def main():
         cmds, error = server.get_input()
 
         if not error:
-            param = convertIntoHexStr(cmds["param"], 16)
-            param = param if len(param) == 4 else "00" + param
-
-            payload = convertIntoHexStr(cmds["cmd"], 8) + convertIntoHexStr(cmds["motor"], 8) + param
+            param = convertIntoHexStr(cmds["param"], 2)
+            payload = "0b" + param
             
             print payload
             server.send(cmds["node"], payload)

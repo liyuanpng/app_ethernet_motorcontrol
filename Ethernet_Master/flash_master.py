@@ -45,6 +45,18 @@ class Firmware_Update(Ethernet_Master):
     def receive_image(self, node):
         pass
 
+    def calc_checksum(self):
+        rest_size = self.get_file_size()
+        size = rest_size
+        byte_sum = 0
+
+        while rest_size:
+            byte_sum += ord(self.read(1))
+            rest_size -= 1
+
+        return byte_sum / size
+
+
     def send_image(self, node):
         rest_size = self.get_file_size()
         size = rest_size
@@ -55,6 +67,9 @@ class Firmware_Update(Ethernet_Master):
         address = dst_addresses[node-1]
         print address
         page = 0
+
+        checksum = self.calc_checksum()
+        print "Checksum", checksum
 
         #self.setup_progbar()
 

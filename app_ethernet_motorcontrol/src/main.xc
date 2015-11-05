@@ -97,7 +97,6 @@ int main(void)
 
     chan foe_comm, c_flash_data;  // Firmware Update channels
 
-
     par
     {
         /************************************************************
@@ -107,9 +106,6 @@ int main(void)
         {
             //printstr("MAC on P1: "); showMAC(MAC_ADDRESS_P1);
             //printstr("MAC on P2: "); showMAC(MAC_ADDRESS_P2);
-            //fl_SPIPorts * movable spi_ports_ptr = &p_spi_flash;
-
-            //overlay_flash_init(move(spi_ports_ptr), 100, 8);
 
             // Sequential Initialization stage for both ports
             // Ethernet PHY transceiver reset
