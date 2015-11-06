@@ -38,8 +38,8 @@ on tile[IFM_TILE]: in port p_ifm_encoder = XS1_PORT_4A; /* Encoder */
 on tile[IFM_TILE]: out port p_ifm_shared_leds_wden = XS1_PORT_4B; /* BlueGreenRed_WDEN */
 on tile[IFM_TILE]: out port p_ifm_wd_tick = XS1_PORT_1F; /* WatchdogTick */
 
-/* Expansion Ports */
-on tile[IFM_TILE]: port p_ifm_ext_d[4] ={ XS1_PORT_1A,
-									  XS1_PORT_1E,
-									  XS1_PORT_1J,
-									  XS1_PORT_1B };
+/* Expansion Ports */								  
+#define EXT_D0	XS1_PORT_1A
+#define EXT_D1	XS1_PORT_1E
+#define EXT_D2	XS1_PORT_1J
+#define EXT_D3	XS1_PORT_1B								  

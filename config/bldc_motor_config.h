@@ -27,7 +27,7 @@
 
 /* Position Sensor Types (select your sensor type here)
  * (HALL/ QEI) */
-#define SENSOR_USED                 HALL
+#define SENSOR_USED                 QEI
 
 /* Define your Incremental Encoder type (QEI_WITH_INDEX/ QEI_WITH_NO_INDEX) */
 #define QEI_SENSOR_TYPE             QEI_WITH_NO_INDEX

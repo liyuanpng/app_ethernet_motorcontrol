@@ -29,6 +29,7 @@
 #include <internal_config.h>
 #include <adc_server_ad7949.h>
 #include <adc_client_ad7949.h>
+#include <rotary_sensor.h>
 
 //#include <overlay_flash.h>
 #include <position_ctrl_client.h>
@@ -38,6 +39,19 @@
 
 #include "protocol.h"
 #include "flash_over_ethernet.h"
+
+#define AMS_INIT_SETTINGS1  5  // Factory Setting 1
+                                // NOISESET 0
+                                // DIR      1   (CCW)
+                                // UVW_ABI  1
+                                // DAECDIS  0
+                                // ABIBIN   0
+                                // Dataselect 0
+                                // PWMon    0
+
+#define AMS_INIT_SETTINGS2  6    //UVWPP    110 (7)
+                                //HYS       0
+                                //ABIRES    0
 
 
 on stdcore[IFM_TILE]: clock clk_adc = XS1_CLKBLK_1;
@@ -52,6 +66,17 @@ mii_interface_t mii_p2 = ETHERNET_DEFAULT_MII_INIT_P2;  // Media Independent Int
 ethernet_reset_interface_t eth_rst_p1 = ETHERNET_DEFAULT_RESET_INTERFACE_INIT_P1;   // Interface to PHY reset for port 1
 ethernet_reset_interface_t eth_rst_p2 = ETHERNET_DEFAULT_RESET_INTERFACE_INIT_P2;   // Interface to PHY reset for port 2
 
+on tile[IFM_TILE]: sensor_spi_interface pRotarySensor =
+{
+    {
+        XS1_CLKBLK_3,
+        XS1_CLKBLK_4,
+        EXT_D3, //P,    //mosi
+        EXT_D1, //E,    //sclk
+        EXT_D2  //I     //miso
+    },
+    EXT_D0 //4C         //slave select
+};
 
 /**
  *  @brief Initialized the positioning server.
@@ -77,6 +102,34 @@ void init_positioning(chanend c_position_ctrl)
     }
 }
 
+/* Test Hall Sensor Client */
+void hall_test(chanend c_hall)
+{
+    int position = 0;
+    int velocity = 0;
+    int direction;
+
+    while(1)
+    {
+        /* get position from Hall Sensor */
+        {position, direction} = get_hall_position_absolute(c_hall);
+
+        /* get velocity from Hall Sensor */
+        velocity = get_hall_velocity(c_hall);
+
+#ifdef ENABLE_xscope
+        xscope_core_int(0, position);
+        xscope_core_int(1, velocity);
+#else
+        printstr("Position: ");
+        printint(position);
+        printstr(" ");
+        printstr("Velocity: ");
+        printintln(velocity);
+#endif
+    }
+}
+
 
 int main(void)
 {
@@ -96,6 +149,8 @@ int main(void)
     interface if_tx tx;
 
     chan foe_comm, c_flash_data;  // Firmware Update channels
+
+
 
     par
     {
@@ -223,6 +278,18 @@ int main(void)
                     qei_par qei_params;
                     init_qei_param(qei_params);
                     run_qei(c_qei_p1, c_qei_p2, c_qei_p3, c_qei_p4, c_qei_p5, c_qei_p6, p_ifm_encoder, qei_params);          // channel priority 1,2..5
+                }
+
+                {
+                    int p;
+                    int r;
+                    r = initRotarySensor(pRotarySensor, AMS_INIT_SETTINGS1, AMS_INIT_SETTINGS2, 0);
+                    printstr("Sensor Ok? = ");
+                    printintln(r);
+                    while(1){
+                        p = readRotarySensorAngleWithoutCompensation(pRotarySensor);
+                        printintln(p);
+                    }
                 }
             }
         }
