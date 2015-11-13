@@ -40,18 +40,54 @@
 #include "protocol.h"
 #include "flash_over_ethernet.h"
 
-#define AMS_INIT_SETTINGS1  5  // Factory Setting 1
+
+
+/* *** SETTINGS 1 ***
+  NAME       BITs    DESCRIPTION
++-----------+-----+-------------------------------------------------------------+
+| IWIDTH    |  0  | Width of the index pulse I (0 = 3LSB, 1 = 1LSB)             |
++-----------+-----+-------------------------------------------------------------+
+| NOISESET  |  1  | Noise setting                                               |
++-----------+-----+-------------------------------------------------------------+
+| DIR       |  2  | Rotation direction                                          |
++-----------+-----+-------------------------------------------------------------+
+| UVW_ABI   |  3  | Defines the PWM Output (0 = ABI is operating, W is used as  |
+|           |     | PWM 1 = UVW is operating, I is used as PWM)                 |
++-----------+-----+-------------------------------------------------------------+
+| DAECDIS   |  4  | Disable Dynamic Angle Error Compensation                    |
+|           |     | (0 = DAE compensation ON, 1 = DAE compensation OFF)         |
++-----------+-----+-------------------------------------------------------------+
+| Dataselect|  6  | This bit defines which data can be read form address        |
+|           |     | 16383dec (3FFFhex). 0->DAECANG 1->CORDICANG                 |
++-----------+-----+-------------------------------------------------------------+
+| PWMon     |  7  | enables PWM (setting of UVW_ABI Bit necessary)              |
++-----------+-----+-------------------------------------------------------------+
+*/
+#define AMS_INIT_SETTINGS1  1 // or 1 (SEEMS TO ME THAT THIS MOTOR WILL SPIN CCW)
+  // Factory Setting 1
+                                // SOMETHING 1
                                 // NOISESET 0
                                 // DIR      1   (CCW)
-                                // UVW_ABI  1
+                                // UVW_ABI  0
                                 // DAECDIS  0
                                 // ABIBIN   0
                                 // Dataselect 0
                                 // PWMon    0
 
-#define AMS_INIT_SETTINGS2  6    //UVWPP    110 (7)
-                                //HYS       0
-                                //ABIRES    0
+/* *** SETTINGS 2 ***
+  NAME    BITs    DESCRIPTION
++-------+-----+-------------------------------------------------------------+
+| UVWPP | 2:0 | UVW number of pole pairs (000 = 1, 001 = 2, 010 = 3,        |
+|       |     | 011 = 4, 100 = 5, 101 = 6, 110 = 7, 111 = 7)                |
++-------+-----+-------------------------------------------------------------+
+| HYS   | 4:3 | Hysteresis for 11 Bit ABI Resolution: (00=3LSB, 01=2LSB,    |
+|       |     | 10=1LSB, 11=no hysteresis) Hysteresis for 10 Bit ABI        |
+|       |     | Resolution: (00=2LSB, 01= 1LSB,10=no Hysteresis LSB,11=3LSB)|
++-------+-----+-------------------------------------------------------------+
+| ABIRES|  5  | Resolution of ABI (0 = 11 bits, 1 = 10 bits)                |
++-------+-----+-------------------------------------------------------------+
+*/
+#define AMS_INIT_SETTINGS2  2
 
 
 on stdcore[IFM_TILE]: clock clk_adc = XS1_CLKBLK_1;
@@ -77,6 +113,24 @@ on tile[IFM_TILE]: sensor_spi_interface pRotarySensor =
     },
     EXT_D0 //4C         //slave select
 };
+
+void get_rotary_sensor_angle(chanend c_rotary_angle)
+{
+    int cmd;
+
+    while (1)
+    {
+        select
+        {
+            case c_rotary_angle :> cmd:
+                c_rotary_angle <: readRotarySensorAngleWithoutCompensation(pRotarySensor);
+                break;
+            default:
+                break;
+        }
+    }
+
+}
 
 /**
  *  @brief Initialized the positioning server.
@@ -130,6 +184,31 @@ void hall_test(chanend c_hall)
     }
 }
 
+/* Test Hall Sensor Client */
+void qei_test(chanend c_qei)
+{
+    int position = 0;
+    int velocity = 0;
+    int direction;
+
+    while(1)
+    {
+        /* get position from Hall Sensor */
+        {position, direction} = get_qei_position_absolute(c_qei);
+
+
+#ifdef ENABLE_xscope
+        xscope_core_int(0, position);
+        xscope_core_int(1, velocity);
+#else
+        printstr("Position: ");
+        printintln(position);
+#endif
+    }
+}
+
+
+
 
 int main(void)
 {
@@ -141,6 +220,7 @@ int main(void)
     chan c_pwm_ctrl, c_adctrig;                                             // pwm channels
     chan c_watchdog;                                        // watchdog channel
     chan c_position_ctrl;
+    chan c_rotary_angle;
 
     // Ethernet channels
     chan rxP1, txP1, rxP2, txP2;                      // Communicate HUB to MAC
@@ -202,7 +282,7 @@ int main(void)
                     txP1, rxP1,
                     txP2, rxP2);
 
-                protocol_server(motor, c_position_ctrl);
+                motor_controlling_server(motor, c_position_ctrl, c_rotary_angle);
 
                 protocol_send(dataToP1, dataToP2, tx);
 
@@ -279,18 +359,33 @@ int main(void)
                     init_qei_param(qei_params);
                     run_qei(c_qei_p1, c_qei_p2, c_qei_p3, c_qei_p4, c_qei_p5, c_qei_p6, p_ifm_encoder, qei_params);          // channel priority 1,2..5
                 }
-
+                /*
                 {
-                    int p;
-                    int r;
-                    r = initRotarySensor(pRotarySensor, AMS_INIT_SETTINGS1, AMS_INIT_SETTINGS2, 0);
-                    printstr("Sensor Ok? = ");
-                    printintln(r);
-                    while(1){
-                        p = readRotarySensorAngleWithoutCompensation(pRotarySensor);
-                        printintln(p);
+
+                    int pp = 0;
+                    //writeNumberPolePairs(pRotarySensor, 7);
+                    while (pp != 3)
+                    {
+                        initRotarySensor(pRotarySensor, AMS_INIT_SETTINGS1, AMS_INIT_SETTINGS2, 0);
+                        pp = readNumberPolePairs(pRotarySensor);
+                        printintln(pp);
                     }
-                }
+
+                    printintln(pp);
+
+                    //hall_test(c_hall_p2);
+                    //qei_test(c_qei_p2);
+                    /*
+                    while (1)
+                    {
+                        int r = readRotarySensorAngleWithoutCompensation(pRotarySensor);
+
+                        //qei_test(c_qei_p2);
+                        printintln(r);
+                    }
+                    get_rotary_sensor_angle(c_rotary_angle);
+
+                }*/
             }
         }
     }

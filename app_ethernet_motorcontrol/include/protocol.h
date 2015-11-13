@@ -8,6 +8,7 @@
 #ifndef PROTOCOL_H_
 #define PROTOCOL_H_
 
+#include <rotary_sensor.h>
 
 #define TX_SIZE 60
 #define OFFSET_PAYLOAD 14
@@ -22,7 +23,7 @@ interface if_tx
     void msg(char reply[], int nbytes);
 };
 
-void protocol_server(server interface if_motor motor, chanend c_position_ctrl);
+void motor_controlling_server(server interface if_motor motor, chanend c_position_ctrl, chanend c_rotary_angle);
 int protocol_motor_filter(char data[], int nBytes, client interface if_motor motor, client interface if_tx tx);
 void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_tx tx);
 void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,

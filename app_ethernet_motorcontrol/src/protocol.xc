@@ -31,9 +31,7 @@ int protocol_controlling(chanend c_position_ctrl, char cmd, int param)
     switch (cmd)
     {
         case 0xb:
-            set_position(param, c_position_ctrl);
-            ret = get_position(c_position_ctrl);
-            printintln(ret);
+
             break;
         default:
             break;
@@ -48,13 +46,9 @@ int protocol_controlling(chanend c_position_ctrl, char cmd, int param)
  *  @param[out]      c_velocity_ctrl     Channel for the velocity controlling.
  *  @param[out]      c_position_ctrl     Channel for the position controlling.
  */
-void protocol_server(server interface if_motor motor, chanend c_position_ctrl)
+void motor_controlling_server(server interface if_motor motor, chanend c_position_ctrl, chanend c_rotary_angle)
 {
-    //timer tt;
-    //unsigned ti;
-
-    //tt :> ti;
-    //tt when timerafter(ti + 100000000) :> void;
+    int angle, pos;
 
     while(1)
     {
@@ -68,7 +62,18 @@ void protocol_server(server interface if_motor motor, chanend c_position_ctrl)
                 if (motor_cmd >= 0xa && motor_cmd <= 0xc)
                 {
                     // Send reply
-                    reply = protocol_controlling(c_position_ctrl, motor_cmd, motor_parameter);
+                    printintln(motor_parameter);
+                    set_position(motor_parameter, c_position_ctrl);
+                    pos = get_position(c_position_ctrl);
+                    //c_rotary_angle <: 1;
+                    //c_rotary_angle :> angle;
+                    //reply = angle;
+                    printstr("AMS: ");
+                    //printint(angle);
+                    printstr(" HALL: ");
+                    printintln(pos);
+                    reply = pos;
+                    //
                 }
                 else
                 {
@@ -195,7 +200,7 @@ void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,
            //                break;
        }
 
-       protocol_motor_filter((rxbuffer, char[]), nbytes, motor, tx);
+       //protocol_motor_filter((rxbuffer, char[]), nbytes, motor, tx);
        flash_filter((rxbuffer,char[]), foe_comm, c_flash_data, nbytes, tx);
 
     }

@@ -10,6 +10,7 @@
 #include <ethernet_config.h>
 #include <print.h>
 #include <flashlib.h>
+#include "flash.h"
 #include <string.h>
 
 #include <xs1.h>
@@ -37,6 +38,7 @@
 #define CMD_READ        1
 #define CMD_WRITE       3
 #define CMD_GETVERSION  4
+#define CMD_FLASH_FW    5
 
 #define PAGE_SIZE   256
 
@@ -48,7 +50,7 @@ int read_data_from_flash(chanend c_flash_data, unsigned page, unsigned char data
 {
     int status;
 
-    c_flash_data <: 1;
+    c_flash_data <: CMD_READ;
     c_flash_data <: data_length;
     c_flash_data <: page;
     c_flash_data :> status;
@@ -64,7 +66,7 @@ int read_data_from_flash(chanend c_flash_data, unsigned page, unsigned char data
 int write_data_to_flash(chanend c_flash_data, unsigned page, unsigned char data[PAGE_SIZE], unsigned data_length)
 {
     int status;
-    c_flash_data <: 3;
+    c_flash_data <: CMD_WRITE;
     c_flash_data <: data_length;
     c_flash_data <: page;
 
@@ -80,14 +82,12 @@ void flash_read(char data[], chanend c_flash_data)
     static int size = 0;
     static int size_rest = 0;
     int page = 0;
-    int cmd = 0;
     int status = 0;
     int byte_count = 0;
 
 
-    // Get Command (read or write)
-    cmd = data[OFFSET_PAYLOAD + OFFSET_CMD];
-    c_flash_data <: cmd;
+    // Get page number
+    page = data[OFFSET_PAYLOAD + OFFSET_PAGE] << 8 | data[OFFSET_PAYLOAD + OFFSET_PAGE+1] << 0;
 
     // Get size (amount of bytes). Only when
     if (size_rest == 0)
@@ -100,24 +100,22 @@ void flash_read(char data[], chanend c_flash_data)
     }
 
     byte_count = PAGE_SIZE;
+    // If size_rest smaller page size, take the rest.
     if (size_rest < byte_count)
     {
         byte_count = size_rest;
     }
-    c_flash_data <: byte_count;
 
-    page = data[OFFSET_PAYLOAD + OFFSET_PAGE] << 8 | data[OFFSET_PAYLOAD + OFFSET_PAGE+1] << 0;
-    c_flash_data <: page;
+    status = read_data_from_flash(c_flash_data, page+1, data+OFFSET_PAYLOAD+OFFSET_DATA, byte_count);
+/*
+    for (int i = 0; i < 278; i++)
+        printhex(data[i]);
+    printhexln(0);
+*/
+    size_rest -= byte_count;
 
-    c_flash_data :> status;
-
-    if (size > 0 && status == 1)
-    {
-        for (int i=OFFSET_PAYLOAD+OFFSET_DATA; i<byte_count+OFFSET_PAYLOAD+OFFSET_DATA; i++)
-            c_flash_data :> data[i];
-
-        size -= byte_count;
-    }
+    if (size_rest == 0)
+        printstrln("Lesen Faeddich!");
 }
 
 int flash_write(char data[], chanend c_flash_data, int nbytes)
@@ -125,7 +123,6 @@ int flash_write(char data[], chanend c_flash_data, int nbytes)
     static int size = 0;
     static int size_rest = 0;
     int page = 0;
-    int cmd = 0;
     int status = 0;
     int byte_count = 0;
 
@@ -140,6 +137,7 @@ int flash_write(char data[], chanend c_flash_data, int nbytes)
               | data[OFFSET_PAYLOAD + OFFSET_SIZE+2] << 8
               | data[OFFSET_PAYLOAD + OFFSET_SIZE+3] << 0);
         printintln(size);
+        // Save size of image in the first page. The image itself will be safed in n+1 pages.
         status = write_data_to_flash(c_flash_data, page, data + OFFSET_PAYLOAD + OFFSET_SIZE, 4);
 
         printintln(status);
@@ -160,7 +158,7 @@ int flash_write(char data[], chanend c_flash_data, int nbytes)
     size_rest -= byte_count;
 
     if (size_rest == 0)
-        printstrln("Faeddich!");
+        printstrln("Schreiben Faeddich!");
 
     return status;
 }
@@ -168,8 +166,7 @@ int flash_write(char data[], chanend c_flash_data, int nbytes)
 
 // Factory image programming
 #pragma stackfunction 2048
-int flash_addFactoryImage(unsigned address,
-                          unsigned imageSize)
+int flash_addFactoryImage(unsigned address, unsigned imageSize)
 {
     if (imageSize == 0)
         return 0;
@@ -179,6 +176,8 @@ int flash_addFactoryImage(unsigned address,
     /* Write data. */
     unsigned char buf[PAGE_SIZE];
     unsigned char checkBuf[PAGE_SIZE];
+
+    printstr("Add Image...");
 
     for (int page=1; page < imageSize/PAGE_SIZE+1; page++)
     {
@@ -192,16 +191,16 @@ int flash_addFactoryImage(unsigned address,
         if (fl_writePage(address, buf) != 0)
             return 1;
 
-        if (fl_readPage(address, checkBuf))
+        if (fl_readPage(address, checkBuf) == 0)
         {
             for(int i=0; i < PAGE_SIZE; i++)
             {
-              if(checkBuf[i] != buf[i])
-              {
-                printhex(i);printchar(' ');
-                printhex(buf[i]);printchar(' ');
-                printhexln(checkBuf[i]);
-              }
+                if(checkBuf[i] != buf[i])
+                {
+                    printhex(i);printchar(' ');
+                    printhex(buf[i]);printchar(' ');
+                    printhexln(checkBuf[i]);
+                }
             }
         }
 
@@ -209,13 +208,29 @@ int flash_addFactoryImage(unsigned address,
         address += pageSize;
     }
 
+    printstrln("finished");
     fl_endWriteImage();
     return 0;
 }
 
+static int getSectorAtOrAfter(unsigned address)
+{
+  unsigned numSectors = fl_getNumSectors();
+  unsigned sector;
+  for (sector = 0; sector < numSectors; sector++) {
+    if (fl_getSectorAddress(sector) >= address)
+      return sector;
+  }
+  return -1;
+}
+
+#define IMAGETAG (0x1a551e5)
+#define IMAGETAG_13 (0x0FF51DE)
+
 int flash_firmware(fl_SPIPorts &SPI, unsigned size)
 {
     fl_BootImageInfo b;
+    unsigned char buf[20];
 
     //flash_setup(1, SPI);
     fl_connect(SPI);
@@ -227,17 +242,39 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
         fl_disconnect();
     }
 
-    printuintln(b.size);
-    printuintln(b.startAddress);
+    printstr("Factory Image Size: ");
+    printuint(b.size);
+    printstr(", Factory Image Addr: ");
+    printuint(b.startAddress);
+    printstr(", Factory Image Version: ");
     printuintln(b.version);
 
-    if (flash_addFactoryImage(0, size) != 0)
+    if (fl_readPage(b.startAddress, buf) == 0)
+    {
+        for (int i = 0; i < 20; i++)
+            printhex(buf[i]);
+        printhexln(0);
+    }
+
+    unsigned upgradeAddress = b.startAddress + b.size;
+    unsigned sectorNum = getSectorAtOrAfter(upgradeAddress);
+    unsigned sectorAddress = fl_getSectorAddress(sectorNum);
+
+    if (flash_addFactoryImage(sectorAddress, size) != 0)
     {
         printstr("Error: failed to locate factory boot image.\n");
         fl_disconnect();
     }
 
+    fl_getNextBootImage(b);
 
+    printstr("Next Image Size: ");
+    printuint(b.size);
+    printstr(", Next Image Addr: ");
+    printuint(b.startAddress);
+    printstr(", Next Image Version: ");
+    printuintln(b.version);
+    /*
     unsigned int imageAddr = 0;
 
     unsigned char checkBuf[PAGE_SIZE];
@@ -270,16 +307,8 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
         //return 1;
       }
     }
+*/
 
-    if( 0 != fl_getFactoryImage(b) )
-    {
-        printstr("Error: Cannot locate factory boot image.\n");
-        fl_disconnect();
-    }
-
-    printuintln(b.size);
-    printuintln(b.startAddress);
-    printuintln(b.version);
 
     fl_setProtection(1);
     fl_disconnect();
@@ -339,10 +368,11 @@ void flash_filter(char data[], chanend foe_comm, chanend c_flash_data, int nbyte
                     break;
                 case CMD_GETVERSION:
                     memcpy((data + OFFSET_PAYLOAD), version, 5);
+                    printstrln("Send version");
                     tx.msg(data, 20);
                     break;
-                case 5:
-                    c_flash_data <: 5;
+                case CMD_FLASH_FW:
+                    c_flash_data <: CMD_FLASH_FW;
                     break;
                 default:
                     break;
@@ -541,7 +571,7 @@ void firmware_update_loop(fl_SPIPorts &SPI, chanend foe_comm, chanend c_flash_da
 
             /* Data Field update */
         case c_flash_data :> command: // read/write
-            if (command == 1)
+            if (command == CMD_READ)
             {       // read
                 c_flash_data :> data_length;
                 c_flash_data :> page;
@@ -558,7 +588,7 @@ void firmware_update_loop(fl_SPIPorts &SPI, chanend foe_comm, chanend c_flash_da
                     }
                 }
             }
-            else if (command == 3)
+            else if (command == CMD_WRITE)
             { // write
                 c_flash_data :> data_length;
                 c_flash_data :> page;
@@ -573,10 +603,11 @@ void firmware_update_loop(fl_SPIPorts &SPI, chanend foe_comm, chanend c_flash_da
 
                 c_flash_data <: status;
             }
-            else if (command == 5)
+            else if (command == CMD_FLASH_FW)
             {
                 __read_data_flash(SPI, 0, data);
                 unsigned size = (data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3]);
+                printstr("Size: ");
                 printintln(size);
 
                 if (flash_firmware(SPI, size))

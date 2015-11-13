@@ -10,6 +10,7 @@ from ethermotor_settings import *
 
 class Firmware_Update(Ethernet_Master):
     PACKAGE_SIZE = 256
+    OFFSET_DATA = 22
     OFFSET_PAYLOAD = 14
 
     def __init__(self, interface, filepath=''):
@@ -18,19 +19,40 @@ class Firmware_Update(Ethernet_Master):
         self.__file_handler = None
         
 
-    def open_file(self):
+    def open_file_to_read(self):
         print "Open file..."
         try:
             self.__file_handler = open(self.__filepath, "rb")
         except:
             print "Error: Opening file"
 
+    def open_file_to_write(self, file_name):
+        print "Open file..."
+        try:
+            self.__file_handler = open(file_name, "wb");
+        except:
+            print "Error: Opening file"
 
-    def read(self, size=0):
+    def close_file(self):
+        print "Close file..."
+        try:
+            self.__file_handler.close()
+        except:
+            print "Error: Closing file"
+
+
+    def read_file(self, size):
         try:
             return self.__file_handler.read(size)
         except:
             print "Error: reading file"
+
+    def write_file(self, data):
+        try:
+            return self.__file_handler.write(data)
+        except:
+            print "Error: writing file"
+
 
     def get_file_size(self):
         return os.path.getsize(self.__filepath)
@@ -51,10 +73,43 @@ class Firmware_Update(Ethernet_Master):
         byte_sum = 0
 
         while rest_size:
-            byte_sum += ord(self.read(1))
+            byte_sum += ord(self.read_file(1))
             rest_size -= 1
 
         return byte_sum / size
+
+    def receive_data(self, node, size):
+        rest_size = size
+        print "Receive file with %s bytes." % size
+
+        protocol_data = "F101" + "%08X" % size
+        print protocol_data
+        address = dst_addresses[node-1]
+        print address
+        page = 0
+
+        f = self.open_file_to_write('receive_file')
+
+        while rest_size:
+            payload = protocol_data + "%04X" % page
+            page += 1
+            self.send(address, payload)
+
+            reply = self.receive()
+
+            if reply:
+                #print reply[Firmware_Update.OFFSET_DATA:Firmware_Update.OFFSET_DATA+Firmware_Update.PACKAGE_SIZE]
+                self.write_file(reply[Firmware_Update.OFFSET_DATA:Firmware_Update.OFFSET_DATA+Firmware_Update.PACKAGE_SIZE])
+                rest_size -= Firmware_Update.PACKAGE_SIZE
+            else:
+                print "Error: Receiving data"
+                return
+        print "All data received"
+
+    def flash_firmware(self, node):
+        protocol_data = "F105"
+
+        self.send(dst_addresses[node-1], protocol_data)
 
 
     def send_image(self, node):
@@ -68,17 +123,15 @@ class Firmware_Update(Ethernet_Master):
         print address
         page = 0
 
-        checksum = self.calc_checksum()
-        print "Checksum", checksum
-
-        #self.setup_progbar()
+        #checksum = self.calc_checksum()
+        #print "Checksum", checksum
 
         while rest_size:            
             if rest_size > Firmware_Update.PACKAGE_SIZE:
-                payload = self.read(Firmware_Update.PACKAGE_SIZE)                
+                payload = self.read_file(Firmware_Update.PACKAGE_SIZE)          
                 rest_size -= Firmware_Update.PACKAGE_SIZE
             else:
-                payload = self.read(rest_size)
+                payload = self.read_file(rest_size)
                 rest_size = 0
 
             payload = protocol_data + "%04X" % page + payload.encode('hex')
@@ -92,14 +145,10 @@ class Firmware_Update(Ethernet_Master):
 
             if (reply):
                 if (reply[15*2-1] != '1'):
-                    sys.stdout.write("Error")
+                    sys.stdout.write(" Error: Sending image")
 
             
         sys.stdout.write("\n")
-
-        protocol_data = "F105"
-
-        self.send(address, protocol_data);
 
         return True
 
@@ -113,6 +162,7 @@ class Firmware_Update(Ethernet_Master):
 
         reply = self.receive()
         if reply:
+            print reply.encode('hex')
             #reply = self.byteToHexStr(reply)
             print reply[Firmware_Update.OFFSET_PAYLOAD:Firmware_Update.OFFSET_PAYLOAD+5]
         else:
@@ -148,9 +198,16 @@ def main():
         fm.set_socket()
         fm.set_timeout(10)
 
-        fm.open_file()
+        fm.open_file_to_read()
 
         fm.send_image(args.node)
+        fm.flash_firmware(args.node)
+
+        fm.close_file()
+
+        #fm.receive_data(args.node, 65536)
+
+        #fm.close_file()
 
 
     if args.v:
