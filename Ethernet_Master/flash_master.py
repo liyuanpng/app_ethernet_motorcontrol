@@ -162,7 +162,7 @@ class Firmware_Update(Ethernet_Master):
 
         reply = self.receive()
         if reply:
-            print reply.encode('hex')
+            #reply.encode('hex')
             #reply = self.byteToHexStr(reply)
             print reply[Firmware_Update.OFFSET_PAYLOAD:Firmware_Update.OFFSET_PAYLOAD+5]
         else:

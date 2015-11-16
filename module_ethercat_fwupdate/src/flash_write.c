@@ -6,10 +6,8 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-//#include "diet_flashlib/diet_flashlib.h"
 #include <flashlib.h>
 #include <platform.h>
-//#include "diet_flashlib/diet_flash.h"
 #include <flash.h>
 #include <flash_somanet.h>
 #include <string.h>

@@ -10,16 +10,16 @@
 #include <ethernet_config.h>
 #include <print.h>
 #include <flashlib.h>
-#include "flash.h"
+#include <flash.h>
 #include <string.h>
-
 #include <xs1.h>
 #include "flash_somanet.h"
 #include "flash_write.h"
+#include <xclib.h>
 
 #define FIRMWARE_VERSION    "v1.0"
 
-#define DEBUG
+//#define DEBUG
 
 #define START_FLASH     12
 #define END_FLASH       26
@@ -177,7 +177,7 @@ int flash_addFactoryImage(unsigned address, unsigned imageSize)
     unsigned char buf[PAGE_SIZE];
     unsigned char checkBuf[PAGE_SIZE];
 
-    printstr("Add Image...");
+    //printstr("Add Image...");
 
     for (int page=1; page < imageSize/PAGE_SIZE+1; page++)
     {
@@ -208,7 +208,7 @@ int flash_addFactoryImage(unsigned address, unsigned imageSize)
         address += pageSize;
     }
 
-    printstrln("finished");
+    //printstrln("finished");
     fl_endWriteImage();
     return 0;
 }
@@ -227,10 +227,14 @@ static int getSectorAtOrAfter(unsigned address)
 #define IMAGETAG (0x1a551e5)
 #define IMAGETAG_13 (0x0FF51DE)
 
+
 int flash_firmware(fl_SPIPorts &SPI, unsigned size)
 {
-    fl_BootImageInfo b;
-    unsigned char buf[20];
+    fl_BootImageInfo b, b1;
+    unsigned char buf[256];
+
+    unsigned factory_address;
+    unsigned update_address;
 
     //flash_setup(1, SPI);
     fl_connect(SPI);
@@ -240,6 +244,7 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
     {
         printstr("Error: Cannot locate factory boot image.\n");
         fl_disconnect();
+        return 1;
     }
 
     printstr("Factory Image Size: ");
@@ -247,68 +252,112 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
     printstr(", Factory Image Addr: ");
     printuint(b.startAddress);
     printstr(", Factory Image Version: ");
-    printuintln(b.version);
+    printuint(b.version);
+    printstr(", Factory?: ");
+    printuintln(b.factory);
 
-    if (fl_readPage(b.startAddress, buf) == 0)
-    {
-        for (int i = 0; i < 20; i++)
-            printhex(buf[i]);
-        printhexln(0);
-    }
+    factory_address = b.startAddress;
+
 
     unsigned upgradeAddress = b.startAddress + b.size;
     unsigned sectorNum = getSectorAtOrAfter(upgradeAddress);
     unsigned sectorAddress = fl_getSectorAddress(sectorNum);
 
+
+    int val = fl_startImageAdd(b, size, 0);
+    if (val != 0)
+    {
+        printintln(val);
+        printstr("Error: failed to start Image add.\n");
+        fl_disconnect();
+        //return 1;
+    }
+
     if (flash_addFactoryImage(sectorAddress, size) != 0)
     {
         printstr("Error: failed to locate factory boot image.\n");
         fl_disconnect();
+        //return 1;
     }
+/*
+    fl_readPage(sectorAddress,buf);
 
-    fl_getNextBootImage(b);
+    for (int i = 0; i < 256; i++)
+    {
+        printhex(buf[i]);
+    }
+    printstrln(" ");*/
+
+    if (fl_getNextBootImage(b) != 0)
+    {
+        printstr("Error: failed to locate next boot image.\n");
+        fl_disconnect();
+        //return 1;
+    }
 
     printstr("Next Image Size: ");
     printuint(b.size);
     printstr(", Next Image Addr: ");
     printuint(b.startAddress);
     printstr(", Next Image Version: ");
-    printuintln(b.version);
-    /*
-    unsigned int imageAddr = 0;
+    printuint(b.version);
+    printstr(", Factory?: ");
+    printuintln(b.factory);
 
-    unsigned char checkBuf[PAGE_SIZE];
-    unsigned char fileBuf[PAGE_SIZE];
-    unsigned int checkPos = 0;
-    int gotError = 0;
+    update_address = sectorAddress;
 
-    while(checkPos < size)
+    if( 0 != fl_getFactoryImage(b) )
     {
-      int thisSize = ((size-checkPos)>PAGE_SIZE) ? PAGE_SIZE : (size-checkPos);
-      fl_readPage(checkPos+imageAddr, checkBuf);
-      fl_readDataPage(checkPos/PAGE_SIZE+1, fileBuf);
-      int i;
-
-      for(i=0; i < thisSize; i++)
-      {
-        if(checkBuf[i] != fileBuf[i])
-        {
-          //printstr("Error: verification mismatch at offset ");
-          printhex(checkPos+i);printchar(' ');
-          printhex(fileBuf[i]);printchar(' ');
-          printhexln(checkBuf[i]);
-          //gotError = 1;
-        }
-      }
-      checkPos += PAGE_SIZE;
-      if(gotError)
-      {
-        printstrln("Error");
-        //return 1;
-      }
+        printstr("Error: Cannot locate factory boot image.\n");
+        fl_disconnect();
+        return 1;
     }
-*/
 
+    if (fl_startImageReplace(b, size) != 0)
+    {
+        printstr("Error: failed to start Image Replace.\n");
+        fl_disconnect();
+        //return 1;
+    }
+
+    for (int i = 0; i < size/PAGE_SIZE; i++)
+    {
+        /*
+        printstr("Page: ");
+        printhex(i);
+        printstr(", update_address: ");
+        printhex(update_address);
+        printstr(", factory_address: ");
+        printhexln(factory_address);
+        */
+        fl_readPage(update_address, buf);
+
+        if (fl_writeImagePage(buf) !=0)//fl_writePage(factory_address, buf) != 0)
+        {
+            printstr("ERROR: writing at factory address\n");
+        }
+
+        update_address += 256;
+        factory_address += 256;
+    }
+
+    if( 0 != fl_getFactoryImage(b1) )
+    {
+        printstr("Error: Cannot locate factory boot image.\n");
+        fl_disconnect();
+        return 1;
+    }
+
+    fl_endWriteImage();
+
+    printstr("Factory Image Size: ");
+    printuint(b1.size);
+    printstr(", Factory Image Addr: ");
+    printuint(b1.startAddress);
+    printstr(", Factory Image Version: ");
+    printuint(b1.version);
+    printstr(", Factory?: ");
+    printuintln(b1.factory);
 
     fl_setProtection(1);
     fl_disconnect();
@@ -337,9 +386,9 @@ void read_firmware(fl_SPIPorts &SPI, unsigned size)
       for(i=0; i < thisSize; i++)
       {
           //printstr("Error: verification mismatch at offset ");
-          printhex(checkPos+i);printchar(' ');
+          //printhex(checkPos+i);printchar(' ');
           //printhex(fileBuf[i]);printchar(' ');
-          printhexln(checkBuf[i]);
+          //printhexln(checkBuf[i]);
       }
       checkPos += PAGE_SIZE;
     }
@@ -368,7 +417,7 @@ void flash_filter(char data[], chanend foe_comm, chanend c_flash_data, int nbyte
                     break;
                 case CMD_GETVERSION:
                     memcpy((data + OFFSET_PAYLOAD), version, 5);
-                    printstrln("Send version");
+                    //printstrln("Send version");
                     tx.msg(data, 20);
                     break;
                 case CMD_FLASH_FW:
