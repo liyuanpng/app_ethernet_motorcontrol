@@ -224,10 +224,6 @@ static int getSectorAtOrAfter(unsigned address)
   return -1;
 }
 
-#define IMAGETAG (0x1a551e5)
-#define IMAGETAG_13 (0x0FF51DE)
-
-
 int flash_firmware(fl_SPIPorts &SPI, unsigned size)
 {
     fl_BootImageInfo b, b1;
@@ -263,21 +259,159 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
     unsigned sectorNum = getSectorAtOrAfter(upgradeAddress);
     unsigned sectorAddress = fl_getSectorAddress(sectorNum);
 
-
+    /*
     int val = fl_startImageAdd(b, size, 0);
     if (val != 0)
     {
         printintln(val);
         printstr("Error: failed to start Image add.\n");
         fl_disconnect();
-        //return 1;
+        return 2;
     }
+    */
 
     if (flash_addFactoryImage(sectorAddress, size) != 0)
     {
         printstr("Error: failed to locate factory boot image.\n");
         fl_disconnect();
-        //return 1;
+        return 3;
+    }
+/*
+    fl_readPage(sectorAddress,buf);
+
+    for (int i = 0; i < 256; i++)
+    {
+        printhex(buf[i]);
+    }
+    printstrln(" ");*/
+
+
+    update_address = sectorAddress;
+
+    for (int i = 0; i < 256; i++)
+    {
+        if (fl_eraseSector(i) != 0)
+        {
+            printstr("Error: Erasing Sector ");
+            printintln(i);
+        }
+        else
+        {
+            printstr("Erasing...\n");
+        }
+
+    }
+
+    /*
+    if( 0 != fl_getFactoryImage(b) )
+    {
+        printstr("Error: Cannot locate factory boot image.\n");
+        fl_disconnect();
+        return 5;
+    }*/
+
+
+    factory_address = 0;
+
+    for (int i = 0; i < size/PAGE_SIZE; i++)
+    {
+
+        fl_readPage(update_address, buf);
+
+        if (fl_writePage(factory_address, buf) != 0) //fl_writeImagePage(buf) !=0
+        {
+            printstr("ERROR: writing at factory address\n");
+            fl_disconnect();
+            return 8;
+        }
+
+        update_address += 256;
+        factory_address += 256;
+    }
+
+
+    if( 0 != fl_getFactoryImage(b1) )
+    {
+        printstr("Error: Cannot locate factory boot image.\n");
+        fl_disconnect();
+        return 7;
+    }
+
+    fl_endWriteImage();
+
+    printstr("Factory Image Size: ");
+    printuint(b1.size);
+    printstr(", Factory Image Addr: ");
+    printuint(b1.startAddress);
+    printstr(", Factory Image Version: ");
+    printuint(b1.version);
+    printstr(", Factory?: ");
+    printuintln(b1.factory);
+
+    if (b1.factory)
+    {
+        fl_disconnect();
+        return 10;
+    }
+
+    fl_setProtection(1);
+    fl_disconnect();
+
+    return 0;
+}
+
+
+int flash_firmware1(fl_SPIPorts &SPI, unsigned size)
+{
+    fl_BootImageInfo b, b1;
+    unsigned char buf[256];
+
+    unsigned factory_address;
+    unsigned update_address;
+
+    //flash_setup(1, SPI);
+    fl_connect(SPI);
+    fl_setProtection(0);
+
+    if( 0 != fl_getFactoryImage(b) )
+    {
+        printstr("Error: Cannot locate factory boot image.\n");
+        fl_disconnect();
+        return 1;
+    }
+
+    printstr("Factory Image Size: ");
+    printuint(b.size);
+    printstr(", Factory Image Addr: ");
+    printuint(b.startAddress);
+    printstr(", Factory Image Version: ");
+    printuint(b.version);
+    printstr(", Factory?: ");
+    printuintln(b.factory);
+
+    factory_address = b.startAddress;
+
+
+    unsigned upgradeAddress = b.startAddress + b.size;
+    unsigned sectorNum = getSectorAtOrAfter(upgradeAddress);
+    unsigned sectorAddress = fl_getSectorAddress(sectorNum);
+
+    /*
+    int val = fl_startImageAdd(b, size, 0);
+    if (val != 0)
+    {
+        printintln(val);
+        printstr("Error: failed to start Image add.\n");
+        fl_disconnect();
+        return 2;
+    }
+    */
+
+    if (flash_addFactoryImage(sectorAddress, size) != 0)
+    {
+        printstr("Error: failed to locate factory boot image.\n");
+        fl_disconnect();
+        return 3;
     }
 /*
     fl_readPage(sectorAddress,buf);
@@ -292,7 +426,7 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
     {
         printstr("Error: failed to locate next boot image.\n");
         fl_disconnect();
-        //return 1;
+        return 4;
     }
 
     printstr("Next Image Size: ");
@@ -306,46 +440,79 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
 
     update_address = sectorAddress;
 
+    /*
     if( 0 != fl_getFactoryImage(b) )
     {
         printstr("Error: Cannot locate factory boot image.\n");
         fl_disconnect();
-        return 1;
+        return 5;
+    }*/
+
+    int i = 1;
+    int val = 1;
+    const int rounds = 1000;
+    while(i++ < rounds)
+    {
+        val = fl_startImageReplace(b, size);
+
+        if (val == 0)
+            i = rounds;
     }
 
-    if (fl_startImageReplace(b, size) != 0)
+    if (val == 0)
+        printstr("YEAH\n");
+    else if (i == rounds)
     {
         printstr("Error: failed to start Image Replace.\n");
         fl_disconnect();
-        //return 1;
+        return 6;
     }
+
+    factory_address = 0xB00; // Next page address after 2644;
 
     for (int i = 0; i < size/PAGE_SIZE; i++)
     {
-        /*
-        printstr("Page: ");
-        printhex(i);
-        printstr(", update_address: ");
-        printhex(update_address);
-        printstr(", factory_address: ");
-        printhexln(factory_address);
-        */
+
         fl_readPage(update_address, buf);
 
-        if (fl_writeImagePage(buf) !=0)//fl_writePage(factory_address, buf) != 0)
+        if (fl_writePage(factory_address, buf) != 0) //
         {
             printstr("ERROR: writing at factory address\n");
+            fl_disconnect();
+            return 8;
         }
 
         update_address += 256;
         factory_address += 256;
     }
+    // Replace image start address.
+    fl_readPage(0, buf);
+    printhex(buf[0]);
+    printhex(buf[1]);
+    printhex(buf[2]);
+    printhexln(buf[3]);
+    buf[0] = 0x7d;
+    buf[1] = 0x40;
+    //fl_eraseSector(0);
+    fl_writePage(0, buf);
+    fl_readPage(0, buf);
+    printhex(buf[0]);
+    printhex(buf[1]);
+    printhex(buf[2]);
+    printhexln(buf[3]);
+
+    fl_readPage(0xb00, buf);
+    printhexln(buf[0]);
+    printhexln(buf[1]);
+    printhexln(buf[2]);
+    printhexln(buf[3]);
+
 
     if( 0 != fl_getFactoryImage(b1) )
     {
         printstr("Error: Cannot locate factory boot image.\n");
         fl_disconnect();
-        return 1;
+        return 7;
     }
 
     fl_endWriteImage();
@@ -358,6 +525,12 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
     printuint(b1.version);
     printstr(", Factory?: ");
     printuintln(b1.factory);
+
+    if (b1.factory)
+    {
+        fl_disconnect();
+        return 10;
+    }
 
     fl_setProtection(1);
     fl_disconnect();
@@ -422,6 +595,10 @@ void flash_filter(char data[], chanend foe_comm, chanend c_flash_data, int nbyte
                     break;
                 case CMD_FLASH_FW:
                     c_flash_data <: CMD_FLASH_FW;
+                    c_flash_data :> reply;
+                    memcpy((data + OFFSET_PAYLOAD), (char *) &reply, 1);
+                    tx.msg(data, 20);
+                    reset_cores1();
                     break;
                 default:
                     break;
@@ -656,13 +833,14 @@ void firmware_update_loop(fl_SPIPorts &SPI, chanend foe_comm, chanend c_flash_da
             {
                 __read_data_flash(SPI, 0, data);
                 unsigned size = (data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3]);
-                printstr("Size: ");
-                printintln(size);
 
-                if (flash_firmware(SPI, size))
+                int error = flash_firmware(SPI, size);
+
+                if (error)
                 {
                     printstrln("Error: Flash Firmware!");
                 }
+                c_flash_data <: error;
                 //read_firmware(SPI, size);
             }
             break;

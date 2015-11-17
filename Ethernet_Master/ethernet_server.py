@@ -123,7 +123,7 @@ class Ethernet_Server:
         try:
             return self.__socket.send(packet)
         except socket.timeout:
-            print "Sending reached Timeout!"
+            print '\033[93m' + "Warning: Sending reached Timeout!" + '\033[0m'
     
     ##
     #   @brief Receives reply.
@@ -133,7 +133,7 @@ class Ethernet_Server:
         try:
             return self.__socket.recv(1024)
         except socket.timeout:
-            print "Receiving reached Timeout!"
+            print '\033[93m' + "Warning: Receiving reached Timeout!" + '\033[0m'
     
     ##
     #   @brief Creates the socket and bind it to the interface.

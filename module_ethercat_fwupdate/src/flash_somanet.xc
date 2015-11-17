@@ -33,4 +33,16 @@ void reset_cores(chanend sig_in, chanend ?sig_out)
         core_reset();
     }
 }
+
+void reset_cores1(void)
+{
+    timer t;
+    unsigned ts;
+    const unsigned delay = 100000;
+
+    t :> ts;
+    t when timerafter(ts + delay) :> void;
+    core_reset();
+
+}
 #endif

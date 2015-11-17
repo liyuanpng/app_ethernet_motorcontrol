@@ -48,6 +48,7 @@ void store_data_array(int offset, int param, char data_array[]);
 // pack data bytes into int_32
 int read_data_array(int offset, char data_array[]);
 
+void reset_cores1(void);
 /* software auto reset functions */
-void reset_cores(chanend sig_in, NULLABLE_RESOURCE(chanend, sig_out));
+//void reset_cores(chanend sig_in, NULLABLE_RESOURCE(chanend, sig_out));
 
