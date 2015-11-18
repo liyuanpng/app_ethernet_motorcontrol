@@ -239,7 +239,7 @@ int main(void)
         ************************************************************/
         on tile[COM_TILE]:
         {
-            //printstr("MAC on P1: "); showMAC(MAC_ADDRESS_P1);
+            printstr("MAC on P1: "); showMAC(MAC_ADDRESS_P1);
             //printstr("MAC on P2: "); showMAC(MAC_ADDRESS_P2);
 
             // Sequential Initialization stage for both ports
