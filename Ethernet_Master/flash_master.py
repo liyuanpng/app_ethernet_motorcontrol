@@ -3,22 +3,11 @@ import socket
 import traceback
 import os
 import sys
+from PyCRC.CRC16 import CRC16
+
 from ethernet_master import *
 from ethermotor_settings import *
-"""
-class bcolors:
-    DICT_COLORS = {'HEADER' : '\033[95m',
-    'OKBLUE' : '\033[94m',
-    'OKGREEN' : '\033[92m',
-    'WARNING' : '\033[93m',
-    'FAIL' : '\033[91m',
-    'ENDC' : '\033[0m',
-    'BOLD' : '\033[1m',
-    'UNDERLINE' : '\033[4m'}
 
-    def printColor(color, string):
-        print DICT_COLORS(color) + string + '\033[0m'
-"""
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -88,16 +77,9 @@ class Firmware_Update(Ethernet_Master):
     def receive_image(self, node):
         pass
 
-    def calc_checksum(self):
-        rest_size = self.get_file_size()
-        size = rest_size
-        byte_sum = 0
-
-        while rest_size:
-            byte_sum += ord(self.read_file(1))
-            rest_size -= 1
-
-        return byte_sum / size
+    def calc_crc(self, packet):
+        crc = CRC16.calculate(packet)
+        return crc
 
     def receive_data(self, node, size):
         rest_size = size
@@ -119,7 +101,6 @@ class Firmware_Update(Ethernet_Master):
             reply = self.receive()
 
             if reply:
-                #print reply[Firmware_Update.OFFSET_DATA:Firmware_Update.OFFSET_DATA+Firmware_Update.PACKAGE_SIZE]
                 self.write_file(reply[Firmware_Update.OFFSET_DATA:Firmware_Update.OFFSET_DATA+Firmware_Update.PACKAGE_SIZE])
                 rest_size -= Firmware_Update.PACKAGE_SIZE
             else:
@@ -157,17 +138,15 @@ class Firmware_Update(Ethernet_Master):
 
         page = 0
 
-        #checksum = self.calc_checksum()
-        #print "Checksum", checksum
-
         while rest_size:            
             if rest_size > Firmware_Update.PACKAGE_SIZE:
-                payload = self.read_file(Firmware_Update.PACKAGE_SIZE)          
+                payload = self.read_file(Firmware_Update.PACKAGE_SIZE)                
                 rest_size -= Firmware_Update.PACKAGE_SIZE
             else:
                 payload = self.read_file(rest_size)
                 rest_size = 0
 
+            crc = self.calc_crc(payload)
             payload = protocol_data + "%04X" % page + payload.encode('hex')
             page += 1
 
@@ -181,7 +160,6 @@ class Firmware_Update(Ethernet_Master):
                 if (reply[15*2-1] != '1'):
                     sys.stdout.write(bcolors.FAIL + " Error: Sending image" + bcolors.ENDC)
                     return False
-
             
         sys.stdout.write("\n\n")
 
