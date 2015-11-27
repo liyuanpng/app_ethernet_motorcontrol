@@ -78,7 +78,9 @@ class Firmware_Update(Ethernet_Master):
         pass
 
     def calc_crc(self, packet):
-        crc = CRC16.calculate(packet)
+        #sys.stdout.write("Calculate CRC16...")
+        crc = CRC16().calculate(packet)
+        #print "done"
         return crc
 
     def receive_data(self, node, size):
@@ -147,7 +149,8 @@ class Firmware_Update(Ethernet_Master):
                 rest_size = 0
 
             crc = self.calc_crc(payload)
-            payload = protocol_data + "%04X" % page + payload.encode('hex')
+            #print crc
+            payload = protocol_data + "%04X" % page + payload.encode('hex') + "%08X" % crc
             page += 1
 
             self.send(address, payload)

@@ -33,9 +33,10 @@
  *
  *****************************************************************************/
 #include "crc.h"
+#include "flashlib.h"
 //#include "em_device.h"
 
-uint16_t crc_calc(uint8_t *start, uint8_t *end)
+uint16_t crc_calc_array(uint8_t *start, uint8_t *end)
 {
   uint16_t crc = 0x0;
   uint8_t  *data;
@@ -52,4 +53,32 @@ uint16_t crc_calc(uint8_t *start, uint8_t *end)
     cnt ++;
   }
   return crc;
+}
+
+uint16_t crc_calc_page(unsigned start_page, unsigned end_page)
+{
+    uint16_t crc = 0x0;
+    uint8_t data[256];
+    unsigned page = 0, byte = 0;
+
+    int cnt = 0;
+
+    if (start_page > end_page) return 0;
+
+    for (page = start_page; page < end_page; page++)
+    {
+        fl_readDataPage(page, data);
+
+        for (byte = 0; byte < 256; byte++)
+        {
+            crc  = (crc >> 8) | (crc << 8);
+            crc ^= data[byte];
+            crc ^= (crc & 0xff) >> 4;
+            crc ^= crc << 12;
+            crc ^= (crc & 0xff) << 5;
+            cnt++;
+        }
+    }
+
+    return crc;
 }

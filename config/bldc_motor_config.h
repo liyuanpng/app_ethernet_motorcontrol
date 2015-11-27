@@ -10,6 +10,6 @@
 #include <bldc_motor_init.h>
 
 /* Just change this config file according to your motor */
-//#include <config_DB59L024035-A.h>
-#include <config_maxon_456710.h>
+#include <config_DB59L024035-A.h>
+//#include <config_maxon_456710.h>
 
