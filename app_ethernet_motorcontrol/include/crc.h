@@ -61,7 +61,7 @@
  * @return
  *   The computed CRC value.
  */
-uint16_t crc_calc_array(uint8_t *start, uint8_t *end);
+uint16_t crc16(uint8_t *start, uint8_t *end, uint16_t crc);
 
 uint16_t crc_calc_page(unsigned start_page, unsigned end_page);
 

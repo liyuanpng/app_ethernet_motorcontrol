@@ -3,7 +3,7 @@ import socket
 import traceback
 import os
 import sys
-from PyCRC.CRC16 import CRC16
+from ctypes import c_ushort
 
 from ethernet_master import *
 from ethermotor_settings import *
@@ -77,11 +77,17 @@ class Firmware_Update(Ethernet_Master):
     def receive_image(self, node):
         pass
 
-    def calc_crc(self, packet):
-        #sys.stdout.write("Calculate CRC16...")
-        crc = CRC16().calculate(packet)
-        #print "done"
-        return crc
+    def crc16(self, data):
+        crc = c_ushort(0)
+
+        for byte in data:            
+            crc  = c_ushort((crc.value >> 8) | (crc.value << 8))
+            crc  = c_ushort(crc.value ^ ord(byte))
+            crc  = c_ushort(crc.value ^ (crc.value & 0xff) >> 4)
+            crc  = c_ushort(crc.value ^ crc.value << 12)
+            crc  = c_ushort(crc.value ^ (crc.value & 0xff) << 5)
+        return crc.value
+
 
     def receive_data(self, node, size):
         rest_size = size
@@ -117,9 +123,12 @@ class Firmware_Update(Ethernet_Master):
         self.send(dst_addresses[node-1], protocol_data)
 
         reply = self.receive()
+        b = bytearray()
+        reply = b.extend(reply)
+
         if reply:
             # Convert Byte into Int
-            error = int(reply[Firmware_Update.OFFSET_PAYLOAD:Firmware_Update.OFFSET_PAYLOAD+1].encode('hex'), 16)
+            error = reply[Firmware_Update.OFFSET_PAYLOAD]
             if error == 0:
                 print bcolors.OKGREEN + "\n\tFlashing successfully finished!\n" + bcolors.ENDC
             else:
@@ -148,21 +157,26 @@ class Firmware_Update(Ethernet_Master):
                 payload = self.read_file(rest_size)
                 rest_size = 0
 
-            crc = self.calc_crc(payload)
-            #print crc
-            payload = protocol_data + "%04X" % page + payload.encode('hex') + "%08X" % crc
+            crc = self.crc16(payload)
+
+            header = protocol_data + "%04X" % page
+            payload = header + payload.encode('hex') + "%04X" % crc
             page += 1
 
             self.send(address, payload)
 
             reply = self.receive()
-            reply = self.byteToHexStr(reply)
+            b = bytearray()
+            reply = b.extend(reply)
+            #reply = self.byteToHexStr(reply) # TODO: bytearray
             self.progress_bar(page, size/Firmware_Update.PACKAGE_SIZE)
 
             if (reply):
-                if (reply[15*2-1] != '1'):
+                if (reply[Firmware_Update.OFFSET_PAYLOAD+1] != 0xff):#if (reply[15*2-1] != '1'):
                     sys.stdout.write(bcolors.FAIL + " Error: Sending image" + bcolors.ENDC)
                     return False
+            else:
+                print bcolors.FAIL + "ERROR: No Reply" + bcolors.ENDC
             
         sys.stdout.write("\n\n")
 

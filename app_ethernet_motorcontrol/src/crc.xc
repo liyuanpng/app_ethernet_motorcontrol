@@ -34,25 +34,25 @@
  *****************************************************************************/
 #include "crc.h"
 #include "flashlib.h"
-//#include "em_device.h"
 
-uint16_t crc_calc_array(uint8_t *start, uint8_t *end)
+
+uint16_t crc16(uint8_t *start, uint8_t *end, uint16_t crc)
 {
-  uint16_t crc = 0x0;
-  uint8_t  *data;
+    uint8_t  *data;
 
-  int cnt = 0;
-  for (data = start; data < end; data++)
-  {
-    crc  = (crc >> 8) | (crc << 8);
-    crc ^= *data;
-    crc ^= (crc & 0xff) >> 4;
-    crc ^= crc << 12;
-    crc ^= (crc & 0xff) << 5;
+    int cnt = 0;
+    for (data = start; data < end; data++)
+    {
+        crc  = (crc >> 8) | (crc << 8);
+        crc ^= *data;
+        crc ^= (crc & 0xff) >> 4;
+        crc ^= crc << 12;
+        crc ^= (crc & 0xff) << 5;
 
-    cnt ++;
-  }
-  return crc;
+        cnt ++;
+    }
+
+    return crc;
 }
 
 uint16_t crc_calc_page(unsigned start_page, unsigned end_page)
@@ -69,15 +69,17 @@ uint16_t crc_calc_page(unsigned start_page, unsigned end_page)
     {
         fl_readDataPage(page, data);
 
-        for (byte = 0; byte < 256; byte++)
+        crc = crc16(data, (data+256), crc);
+        /*
+        for (byte = data; byte < (data+256); data++)
         {
             crc  = (crc >> 8) | (crc << 8);
-            crc ^= data[byte];
+            crc ^= *byte;
             crc ^= (crc & 0xff) >> 4;
             crc ^= crc << 12;
             crc ^= (crc & 0xff) << 5;
             cnt++;
-        }
+        }*/
     }
 
     return crc;

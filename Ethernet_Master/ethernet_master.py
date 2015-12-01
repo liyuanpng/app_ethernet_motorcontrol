@@ -67,7 +67,8 @@ class Ethernet_Master:
     #
     def receive(self):
         try:
-            return self.__socket.recv(1024)
+            #b = bytearray()            
+            return self.__socket.recv(1024)#b.extend(self.__socket.recv(1024))
         except socket.timeout:
             print '\033[93m' + "Warning: Receiving reached Timeout!" + '\033[0m'
     

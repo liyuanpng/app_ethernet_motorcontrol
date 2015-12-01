@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <xclib.h>
 
+
 #include "flash_somanet.h"
 #include "flash_write.h"
 #include "crc.h"
@@ -160,16 +161,17 @@ int flash_write(char data[], chanend c_flash_data, int nbytes)
         byte_count = size_rest;
     }
 
-    packetCRC = data[OFFSET_CRC] << 8 | data[OFFSET_CRC + 1];
+    // CRC must be Zero, if everything is OK.
+    calculatedCRC = crc16(data+OFFSET_DATA, data+OFFSET_END_W_CRC, 0);
 
-    calculatedCRC = crc_calc_array(data+OFFSET_DATA, data+OFFSET_END_W_CRC);
-
-    if (!calculatedCRC)
+    if (calculatedCRC)
     {
+        packetCRC = data[OFFSET_CRC] << 8 | data[OFFSET_CRC + 1];
         printstr("Wrong CRC: ");
         printint(packetCRC);
         printstr(" ");
         printint(calculatedCRC);
+        // TODO: If CRC is not zero, package must be send again.
     }
 
     // Send Bytes.
@@ -180,7 +182,7 @@ int flash_write(char data[], chanend c_flash_data, int nbytes)
     if (size_rest == 0)
         printstrln("Schreiben Faeddich!");
 
-    return status;
+    return status?0xff:0x0;
 }
 
 
