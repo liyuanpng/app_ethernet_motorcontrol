@@ -152,6 +152,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_spi_master/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ams_rotary_sensor/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_flash/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_board-support/bsp/IFM_DC1K}&quot;"/>
 								</option>
 								<option id="com.xmos.xc.compiler.option.defined.symbols.1269426300" name="com.xmos.xc.compiler.option.defined.symbols" superClass="com.xmos.xc.compiler.option.defined.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__SHRT_MAX__=32767"/>
@@ -681,6 +682,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_spi_master/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ams_rotary_sensor/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_flash/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_board-support/bsp/IFM_DC1K}&quot;"/>
 								</option>
 								<inputType id="com.xmos.cdt.c.compiler.input.c.25798369" name="C" superClass="com.xmos.cdt.c.compiler.input.c"/>
 							</tool>
@@ -1029,6 +1031,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_spi_master/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ams_rotary_sensor/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_flash/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_board-support/bsp/IFM_DC1K}&quot;"/>
 								</option>
 								<inputType id="com.xmos.cdt.cxx.compiler.input.cpp.39481769" name="C++" superClass="com.xmos.cdt.cxx.compiler.input.cpp"/>
 							</tool>
@@ -1271,6 +1274,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_spi_master/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ams_rotary_sensor/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_flash/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_board-support/bsp/IFM_DC1K}&quot;"/>
 								</option>
 								<option id="com.xmos.xc.compiler.option.defined.symbols.475892560" name="com.xmos.xc.compiler.option.defined.symbols" superClass="com.xmos.xc.compiler.option.defined.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__SHRT_MAX__=32767"/>
@@ -1794,6 +1798,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_spi_master/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ams_rotary_sensor/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_flash/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_board-support/bsp/IFM_DC1K}&quot;"/>
 								</option>
 								<inputType id="com.xmos.cdt.c.compiler.input.c.81453775" name="C" superClass="com.xmos.cdt.c.compiler.input.c"/>
 							</tool>
@@ -2136,6 +2141,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_spi_master/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_ams_rotary_sensor/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_flash/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/module_board-support/bsp/IFM_DC1K}&quot;"/>
 								</option>
 								<inputType id="com.xmos.cdt.cxx.compiler.input.cpp.85882228" name="C++" superClass="com.xmos.cdt.cxx.compiler.input.cpp"/>
 							</tool>

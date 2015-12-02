@@ -200,8 +200,8 @@ void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,
            //                break;
        }
 
-       //protocol_motor_filter((rxbuffer, char[]), nbytes, motor, tx);
-       flash_filter((rxbuffer,char[]), foe_comm, c_flash_data, nbytes, tx);
+       protocol_motor_filter((rxbuffer, char[]), nbytes, motor, tx);
+       //flash_filter((rxbuffer,char[]), foe_comm, c_flash_data, nbytes, tx);
 
     }
 }

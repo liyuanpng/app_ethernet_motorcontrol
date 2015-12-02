@@ -1,6 +1,6 @@
 #include <COM_ETHERNET-rev-a.inc>
 #include <CORE_C22-rev-a.inc>
-#include <IFM_DC100-rev-b.inc>
+#include <IFM_DC1K-rev-c2.inc>
 
 /**
  * @file main.xc
@@ -29,6 +29,7 @@
 #include <internal_config.h>
 #include <adc_server_ad7949.h>
 #include <adc_client_ad7949.h>
+#include <adc_7265.h>
 #include <rotary_sensor.h>
 
 //#include <overlay_flash.h>
@@ -107,30 +108,24 @@ on tile[IFM_TILE]: sensor_spi_interface pRotarySensor =
     {
         XS1_CLKBLK_3,
         XS1_CLKBLK_4,
-        EXT_D3, //P,    //mosi
-        EXT_D1, //E,    //sclk
-        EXT_D2  //I     //miso
+        GPIO_D3, //P,    //mosi
+        GPIO_D1, //E,    //sclk
+        GPIO_D2  //I     //miso
     },
-    EXT_D0 //4C         //slave select
+    GPIO_D0 //4C         //slave select
 };
 
-void get_rotary_sensor_angle(chanend c_rotary_angle)
+#ifdef AD7265
+on tile[IFM_TILE]: adc_ports_t adc_ports =
 {
-    int cmd;
+        {ADC_DATA_A, ADC_DATA_B},
+        ADC_INT_CLK,
+        ADC_SCLK,
+        ADC_READY,
+        ADC_MUX
+};
+#endif
 
-    while (1)
-    {
-        select
-        {
-            case c_rotary_angle :> cmd:
-                c_rotary_angle <: readRotarySensorAngleWithoutCompensation(pRotarySensor);
-                break;
-            default:
-                break;
-        }
-    }
-
-}
 
 /**
  *  @brief Initialized the positioning server.
@@ -156,59 +151,6 @@ void init_positioning(chanend c_position_ctrl)
     }
 }
 
-/* Test Hall Sensor Client */
-void hall_test(chanend c_hall)
-{
-    int position = 0;
-    int velocity = 0;
-    int direction;
-
-    while(1)
-    {
-        /* get position from Hall Sensor */
-        {position, direction} = get_hall_position_absolute(c_hall);
-
-        /* get velocity from Hall Sensor */
-        velocity = get_hall_velocity(c_hall);
-
-#ifdef ENABLE_xscope
-        xscope_core_int(0, position);
-        xscope_core_int(1, velocity);
-#else
-        printstr("Position: ");
-        printint(position);
-        printstr(" ");
-        printstr("Velocity: ");
-        printintln(velocity);
-#endif
-    }
-}
-
-/* Test Hall Sensor Client */
-void qei_test(chanend c_qei)
-{
-    int position = 0;
-    int velocity = 0;
-    int direction;
-
-    while(1)
-    {
-        /* get position from Hall Sensor */
-        {position, direction} = get_qei_position_absolute(c_qei);
-
-
-#ifdef ENABLE_xscope
-        xscope_core_int(0, position);
-        xscope_core_int(1, velocity);
-#else
-        printstr("Position: ");
-        printintln(position);
-#endif
-    }
-}
-
-
-
 
 int main(void)
 {
@@ -220,7 +162,12 @@ int main(void)
     chan c_pwm_ctrl, c_adctrig;                                             // pwm channels
     chan c_watchdog;                                        // watchdog channel
     chan c_position_ctrl;
-    chan c_rotary_angle;
+    interface AMS iAMS;
+    #ifdef AD7265
+        interface ADC i_adc;
+    #else
+        chan c_adc;
+    #endif
 
     // Ethernet channels
     chan rxP1, txP1, rxP2, txP2;                      // Communicate HUB to MAC
@@ -229,8 +176,6 @@ int main(void)
     interface if_tx tx;
 
     chan foe_comm, c_flash_data;  // Firmware Update channels
-
-
 
     par
     {
@@ -322,14 +267,26 @@ int main(void)
         {
             par
             {
+
+                {
+                /* PWM Loop */
+                #ifdef DC1K
+                    // Turning off all MOSFETs for for initialization
+                    disable_fets(p_ifm_motor_hi, p_ifm_motor_lo, 4);
+                #endif
                 /* PWM Loop */
                 do_pwm_inv_triggered(c_pwm_ctrl, c_adctrig, p_ifm_dummy_port,\
                         p_ifm_motor_hi, p_ifm_motor_lo, clk_pwm);
+                }
 
-                /* ADC Loop */
-                adc_ad7949_triggered(c_adc, c_adc_1, c_adctrig, clk_adc,\
-                        p_ifm_adc_sclk_conv_mosib_mosia, p_ifm_adc_misoa,\
-                        p_ifm_adc_misob);
+                /* ADC loop */
+                #ifdef AD7265
+                    foc_adc_7265_continuous_loop(i_adc, adc_ports);
+                #else
+                    adc_ad7949_triggered(c_adc, c_adctrig, clk_adc,\
+                            p_ifm_adc_sclk_conv_mosib_mosia, p_ifm_adc_misoa,\
+                            p_ifm_adc_misob);
+                #endif
 
                 /* Motor Commutation loop */
                 {
@@ -338,54 +295,44 @@ int main(void)
                     commutation_par commutation_params;
                     init_hall_param(hall_params);
                     init_qei_param(qei_params);
-                    commutation_sinusoidal(c_hall_p1,  c_qei_p1, c_signal, c_watchdog,  \
-                            c_commutation_p1, c_commutation_p2, c_commutation_p3, c_pwm_ctrl,\
-                            p_ifm_esf_rstn_pwml_pwmh, p_ifm_coastn, p_ifm_ff1, p_ifm_ff2,\
+                    commutation_sinusoidal(c_hall_p1,  c_qei_p1, c_signal, c_watchdog,
+                            c_commutation_p1, c_commutation_p2, c_commutation_p3, c_pwm_ctrl,
+                            #ifdef DC1K
+                            null, null, null, null,
+                            #else
+                            p_ifm_esf_rstn_pwml_pwmh, p_ifm_coastn, p_ifm_ff1, p_ifm_ff2,
+                            #endif
                             hall_params, qei_params, commutation_params);
                 }
 
                 /* Watchdog Server */
-                run_watchdog(c_watchdog, p_ifm_wd_tick, p_ifm_shared_leds_wden);
+                #ifdef DC1K
+                    run_watchdog(c_watchdog, 1, null, p_ifm_led_moton_wdtick_wden);
+                #else
+                    run_watchdog(c_watchdog, p_ifm_wd_tick, p_ifm_shared_leds_wden);
+                #endif
 
                 /* Hall Server */
                 {
+                    #ifdef DC1K
+                    //connector 1
+                    p_ifm_encoder_hall_select_ext_d4to5 <: SET_ALL_AS_HALL;
+                    #endif
                     hall_par hall_params;
-                    run_hall(c_hall_p1, c_hall_p2, c_hall_p3, c_hall_p4, c_hall_p5, c_hall_p6, p_ifm_hall, hall_params); // channel priority 1,2..5
+                    run_hall(c_hall_p1, c_hall_p2, c_hall_p3, c_hall_p4, c_hall_p5, c_hall_p6, p_ifm_hall_or_encoder_1, hall_params); // channel priority 1,2..5
                 }
 
                 /* QEI Server */
                 {
                     qei_par qei_params;
                     init_qei_param(qei_params);
-                    run_qei(c_qei_p1, c_qei_p2, c_qei_p3, c_qei_p4, c_qei_p5, c_qei_p6, p_ifm_encoder, qei_params);          // channel priority 1,2..5
+                    run_qei(c_qei_p1, c_qei_p2, c_qei_p3, c_qei_p4, c_qei_p5, c_qei_p6, p_ifm_hall_or_encoder_2, qei_params);          // channel priority 1,2..5
                 }
-                /*
+
                 {
+                    run_ams_sensor(iAMS, 1, 16384, pRotarySensor, AMS_INIT_SETTINGS1, AMS_INIT_SETTINGS2, 8315);
+                }
 
-                    int pp = 0;
-                    //writeNumberPolePairs(pRotarySensor, 7);
-                    while (pp != 3)
-                    {
-                        initRotarySensor(pRotarySensor, AMS_INIT_SETTINGS1, AMS_INIT_SETTINGS2, 0);
-                        pp = readNumberPolePairs(pRotarySensor);
-                        printintln(pp);
-                    }
-
-                    printintln(pp);
-
-                    //hall_test(c_hall_p2);
-                    //qei_test(c_qei_p2);
-                    /*
-                    while (1)
-                    {
-                        int r = readRotarySensorAngleWithoutCompensation(pRotarySensor);
-
-                        //qei_test(c_qei_p2);
-                        printintln(r);
-                    }
-                    get_rotary_sensor_angle(c_rotary_angle);
-
-                }*/
             }
         }
     }
