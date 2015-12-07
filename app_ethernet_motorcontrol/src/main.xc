@@ -245,15 +245,15 @@ int main(void)
             // Sequential Initialization stage for both ports
             // Ethernet PHY transceiver reset
             eth_phy_reset(eth_rst_p1); // Port 1
-            eth_phy_reset(eth_rst_p2); // Port 2
+            //eth_phy_reset(eth_rst_p2); // Port 2
 
             // Initialize SMI for communication. These functions belong to module_ethernet_smi.
             smi_init(smi_p1); // Port 1
-            smi_init(smi_p2); // Port 2
+            //smi_init(smi_p2); // Port 2
 
             // Set config over SMI. These functions belong to module_ethernet_smi.
             eth_phy_config(1, smi_p1); // Port 1
-            eth_phy_config(1, smi_p2); // Port 2
+            //eth_phy_config(1, smi_p2); // Port 2
 
             // Parallel Ethernet server loops
             par
@@ -281,6 +281,7 @@ int main(void)
                     dataFromP2, dataToP2,
                     txP1, rxP1,
                     txP2, rxP2);
+
 
                 motor_controlling_server(motor, c_position_ctrl, c_rotary_angle);
 
@@ -359,33 +360,7 @@ int main(void)
                     init_qei_param(qei_params);
                     run_qei(c_qei_p1, c_qei_p2, c_qei_p3, c_qei_p4, c_qei_p5, c_qei_p6, p_ifm_encoder, qei_params);          // channel priority 1,2..5
                 }
-                /*
-                {
 
-                    int pp = 0;
-                    //writeNumberPolePairs(pRotarySensor, 7);
-                    while (pp != 3)
-                    {
-                        initRotarySensor(pRotarySensor, AMS_INIT_SETTINGS1, AMS_INIT_SETTINGS2, 0);
-                        pp = readNumberPolePairs(pRotarySensor);
-                        printintln(pp);
-                    }
-
-                    printintln(pp);
-
-                    //hall_test(c_hall_p2);
-                    //qei_test(c_qei_p2);
-                    /*
-                    while (1)
-                    {
-                        int r = readRotarySensorAngleWithoutCompensation(pRotarySensor);
-
-                        //qei_test(c_qei_p2);
-                        printintln(r);
-                    }
-                    get_rotary_sensor_angle(c_rotary_angle);
-
-                }*/
             }
         }
     }

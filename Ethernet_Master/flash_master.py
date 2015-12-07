@@ -123,12 +123,11 @@ class Firmware_Update(Ethernet_Master):
         self.send(dst_addresses[node-1], protocol_data)
 
         reply = self.receive()
-        b = bytearray()
-        reply = b.extend(reply)
+        reply_array = bytearray(reply)
 
-        if reply:
+        if reply_array:
             # Convert Byte into Int
-            error = reply[Firmware_Update.OFFSET_PAYLOAD]
+            error = reply_array[Firmware_Update.OFFSET_PAYLOAD]
             if error == 0:
                 print bcolors.OKGREEN + "\n\tFlashing successfully finished!\n" + bcolors.ENDC
             else:
@@ -166,17 +165,18 @@ class Firmware_Update(Ethernet_Master):
             self.send(address, payload)
 
             reply = self.receive()
-            b = bytearray()
-            reply = b.extend(reply)
-            #reply = self.byteToHexStr(reply) # TODO: bytearray
-            self.progress_bar(page, size/Firmware_Update.PACKAGE_SIZE)
 
-            if (reply):
-                if (reply[Firmware_Update.OFFSET_PAYLOAD+1] != 0xff):#if (reply[15*2-1] != '1'):
+            reply_array = bytearray(reply)
+
+            if reply_array:
+                if (reply_array[Firmware_Update.OFFSET_PAYLOAD] != 0xff):
                     sys.stdout.write(bcolors.FAIL + " Error: Sending image" + bcolors.ENDC)
                     return False
             else:
                 print bcolors.FAIL + "ERROR: No Reply" + bcolors.ENDC
+                return False
+
+            self.progress_bar(page, size/Firmware_Update.PACKAGE_SIZE)            
             
         sys.stdout.write("\n\n")
 
@@ -226,8 +226,8 @@ def main():
 
         fm.open_file_to_read()
 
-        fm.send_image(args.node)
-        fm.flash_firmware(args.node)
+        if fm.send_image(args.node):
+            fm.flash_firmware(args.node)
 
         fm.close_file()
 

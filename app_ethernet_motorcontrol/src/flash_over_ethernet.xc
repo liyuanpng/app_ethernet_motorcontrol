@@ -49,6 +49,10 @@
 #define CMD_GETVERSION  4
 #define CMD_FLASH_FW    5
 
+#define ACK 0xff
+#define NACK !ACK
+#define ERR_CRC 0xfc
+
 
 
 unsigned image_size = 0;
@@ -172,6 +176,7 @@ int flash_write(char data[], chanend c_flash_data, int nbytes)
         printstr(" ");
         printint(calculatedCRC);
         // TODO: If CRC is not zero, package must be send again.
+        return
     }
 
     // Send Bytes.
@@ -182,22 +187,23 @@ int flash_write(char data[], chanend c_flash_data, int nbytes)
     if (size_rest == 0)
         printstrln("Schreiben Faeddich!");
 
-    return status?0xff:0x0;
+    return status?ACK:NACK;
 }
 
 
 // Factory image programming
-#pragma stackfunction 2048
+//#pragma stackfunction 2048
 int flash_addUpgradeImage(unsigned address, unsigned imageSize)
 {
     if (imageSize == 0)
-        return 0;
+        return 5;
 
-    unsigned pageSize = fl_getPageSize();
+    unsigned pageSize = PAGE_SIZE;
 
     /* Write data. */
     unsigned char buf[PAGE_SIZE];
     unsigned char checkBuf[PAGE_SIZE];
+    //int error = 0;
 
     printstr("Add Image...");
 
@@ -210,8 +216,9 @@ int flash_addUpgradeImage(unsigned address, unsigned imageSize)
         /* Write the page. */
         //printstr("Writing page at "); printhexln(address);
 
-        if (fl_writePage(address, buf) != 0)
-            return 1;
+        //if (fl_writePage(address, buf) != 0)
+        if (fl_writeImagePage(buf) != 0)
+            return 2;
 
         if (fl_readPage(address, checkBuf) == 0)
         {
@@ -222,8 +229,13 @@ int flash_addUpgradeImage(unsigned address, unsigned imageSize)
                     printhex(i);printchar(' ');
                     printhex(buf[i]);printchar(' ');
                     printhexln(checkBuf[i]);
+                    return 3;
                 }
             }
+        }
+        else
+        {
+            return 4;
         }
 
         imageSize -= pageSize;
@@ -280,31 +292,34 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
     unsigned sectorNum = getSectorAtOrAfter(upgradeAddress);
     unsigned sectorAddress = fl_getSectorAddress(sectorNum);
 
-    int i = 1;
     int val = 1;
-    const int rounds = 1000;
 
-    while(i++ < rounds)
+    while (1)
     {
+        //val = fl_startImageAddAt(0x10000, size);
         val = fl_startImageAdd(b, size, 0);
-
         if (val == 0)
             break;
+        else if (val == 1)
+            printstr(".");
+        else
+            __builtin_unreachable();
     }
 
     if (val != 0)
     {
-        printintln(val);
         printstr("Error: failed to start Image add.\n");
         fl_disconnect();
         return 2;
     }
 
-    if (flash_addUpgradeImage(sectorAddress, size) != 0)
+    int error_upgrade = flash_addUpgradeImage(sectorAddress, size);
+
+    if (error_upgrade != 0)
     {
         printstr("Error: failed to add upgrade image.\n");
         fl_disconnect();
-        return 3;
+        return 10 + error_upgrade;
     }
     /*
     fl_readPage(sectorAddress,buf);
@@ -330,54 +345,6 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
     printuint(b.version);
     printstr(", Factory?: ");
     printuintln(b.factory);
-
-    /*
-    update_address = sectorAddress;
-
-    if( 0 != fl_getFactoryImage(b) )
-    {
-        printstr("Error: Cannot locate factory boot image.\n");
-        fl_disconnect();
-        return 5;
-    }
-
-    i = 1;
-    val = 1;
-
-    while(i++ < rounds)
-    {
-        val = fl_startImageReplace(b, size);
-
-        if (val == 0)
-            break;
-    }
-
-    if (val == 0)
-        printstr("YEAH\n");
-    else if (i == rounds)
-    {
-        printstr("Error: failed to start Image Replace.\n");
-        fl_disconnect();
-        return 6;
-    }
-
-    for (int i = 0; i < size/PAGE_SIZE; i++)
-    {
-        fl_readPage(update_address, buf);
-
-        if (fl_writePage(factory_address, buf) != 0) //
-        {
-            printstr("ERROR: writing at factory address\n");
-            fl_disconnect();
-            return 8;
-        }
-
-        update_address += 256;
-        factory_address += 256;
-    }
-*/
-
-    fl_endWriteImage();
 
     //fl_setProtection(1);
     fl_disconnect();
