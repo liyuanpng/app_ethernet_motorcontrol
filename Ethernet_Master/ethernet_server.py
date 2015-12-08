@@ -3,10 +3,7 @@ import sys
 import fcntl, struct
 import re
 import traceback
-import time
 import os
-
-from ethermotor_settings import *
 
 
 class Ethernet_Server:

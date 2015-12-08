@@ -1,38 +1,41 @@
 import socket
-import fcntl, struct
+import fcntl
+import struct
 
-class Ethernet_Master:
+
+class EthernetMaster:
     def __init__(self, interface, ethertype):
         self.__interface = interface
         self.__ethertype = ethertype
         self.__socket = None
         self.__src_addr  = self.__getHwAddr(self.__interface)
 
-
     ##
     #   @brief Gets the MAC address from the interface. Works only on linux.
     #   @param[in]  ifname  The interface name as string
     #   @return     The MAC address as a readable string.
     #
-    def __getHwAddr(self, ifname):
+    @staticmethod
+    def __getHwAddr(ifname):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         info = fcntl.ioctl(s.fileno(), 0x8927,  struct.pack('256s', ifname[:15]))
         return ':'.join(['%02x' % ord(char) for char in info[18:24]])
-
 
     ##
     #   @brief Replaces the colon from the MAC addresses and decode the string into hex bytes.
     #   @param[in]  data    Input string.
     #   @return     the decoded string with removed colon
     #
-    def __strToHex(self, data):
+    @staticmethod
+    def __strToHex(data):
         return data.replace(":", "").decode('hex')
     
     ##
     #   @brief Decodes a byte string in a readable hex string.
     #   @return     Hex string.
     #
-    def byteToHexStr(self, data):
+    @staticmethod
+    def byteToHexStr(data):
         if data is not None:
             return "".join("{:02x}".format(ord(c)) for c in data)
         else:

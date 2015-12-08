@@ -176,7 +176,7 @@ int flash_write(char data[], chanend c_flash_data, int nbytes)
         printstr(" ");
         printint(calculatedCRC);
         // TODO: If CRC is not zero, package must be send again.
-        return
+        return ERR_CRC;
     }
 
     // Send Bytes.
@@ -260,7 +260,7 @@ static int getSectorAtOrAfter(unsigned address)
 
 int flash_firmware(fl_SPIPorts &SPI, unsigned size)
 {
-    fl_BootImageInfo b, b1;
+    fl_BootImageInfo b;
     unsigned char buf[256];
 
     unsigned factory_address;
