@@ -22,6 +22,9 @@ class FirmwareUpdate(EthernetMaster):
     PACKAGE_SIZE = 256
     OFFSET_DATA = 22
     OFFSET_PAYLOAD = 14
+    ERR_CRC = 0xFC
+    ACK = 0xFF
+    NACK = not ACK
 
     def __init__(self, interface, filepath=''):
         EthernetMaster.__init__(self, interface, "0801")
@@ -134,6 +137,7 @@ class FirmwareUpdate(EthernetMaster):
             print bcolors.FAIL + "ERROR: No Reply" + bcolors.ENDC
 
     def send_image(self, node):
+        reply = 0
         sys.stdout.write("Update Firmware from node ")
         address = dst_addresses[node-1]
         print address
@@ -159,16 +163,16 @@ class FirmwareUpdate(EthernetMaster):
             payload = header + payload.encode('hex') + "%04X" % crc
             page += 1
 
-            self.send(address, payload)
+            while reply != ACK:
+                self.send(address, payload)
 
-            reply = self.receive()
+                reply_bytes = self.receive()
 
-            reply_array = bytearray(reply)
-
-            if reply_array:
-                if reply_array[FirmwareUpdate.OFFSET_PAYLOAD] != 0xff:
-                    sys.stdout.write(bcolors.FAIL + " Error: Sending image" + bcolors.ENDC)
-                    return False
+                if reply_bytes:
+                    reply = bytearray(reply_bytes)[FirmwareUpdate.OFFSET_PAYLOAD]
+                    if reply != ACK and reply != ERR_CRC:
+                        sys.stdout.write(bcolors.FAIL + "\n\tError: Sending image" + bcolors.ENDC)
+                        return False
             else:
                 print bcolors.FAIL + "ERROR: No Reply" + bcolors.ENDC
                 return False
