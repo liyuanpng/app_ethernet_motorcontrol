@@ -228,8 +228,9 @@ int main(void)
     interface if_motor motor;
     interface if_tx tx;
 
+    chan foe_signal;        // File from module_ethercat to consumer
     chan foe_comm, c_flash_data;  // Firmware Update channels
-
+    chan c_nodes[1];
 
 
     par
@@ -264,6 +265,7 @@ int main(void)
                 //ethernet_server_p2(mii_p2, smi_p2, MAC_OUTPUT, rxP2, txP2);
 
                 firmware_update_loop(p_spi_flash, foe_comm, c_flash_data, null); // firmware update over ethernet
+                //firmware_update_loop(p_spi_flash, foe_comm, foe_signal, c_flash_data, c_nodes, null);
             }
         }
 
@@ -287,7 +289,7 @@ int main(void)
 
                 protocol_send(dataToP1, dataToP2, tx);
 
-                protocol_fetcher(dataFromP1, dataFromP2, foe_comm, c_flash_data, motor, tx);
+                protocol_fetcher(dataFromP1, dataFromP2, foe_comm, foe_signal, c_flash_data, motor, tx);
             }
         }
 

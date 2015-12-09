@@ -7,15 +7,43 @@ from ethernet_master import *
 from ethermotor_settings import *
 
 
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+#class bcolors:
+HEADER = '\033[95m'
+OKBLUE = '\033[94m'
+OKGREEN = '\033[92m'
+WARNING = '\033[93m'
+FAIL = '\033[91m'
+ENDC = '\033[0m'
+BOLD = '\033[1m'
+UNDERLINE = '\033[4m'
+
+
+def tags(tag_name):
+    def tags_decorator(func):
+        def func_wrapper(text):
+            return "{0}{1}{2}".format(tag_name, func(text), ENDC)
+        return func_wrapper
+    return tags_decorator
+
+
+@tags(FAIL)
+def print_fail(text):
+    return text
+
+
+@tags(OKGREEN)
+def print_ok(text):
+    return text
+
+
+@tags(WARNING)
+def print_warning(text):
+    return text
+
+
+@tags(BOLD)
+def print_bold(text):
+    return text
 
 
 class FirmwareUpdate(EthernetMaster):
@@ -24,7 +52,7 @@ class FirmwareUpdate(EthernetMaster):
     OFFSET_PAYLOAD = 14
     ERR_CRC = 0xFC
     ACK = 0xFF
-    NACK = not ACK
+    NACK = 0x0
 
     def __init__(self, interface, filepath=''):
         EthernetMaster.__init__(self, interface, "0801")
@@ -32,37 +60,37 @@ class FirmwareUpdate(EthernetMaster):
         self.__file_handler = None
 
     def open_file_to_read(self):
-        print "Open file..."
+        #print "Open file..."
         try:
             self.__file_handler = open(self.__filepath, "rb")
         except IOError as e:
-            print bcolors.FAIL + "Error: Opening file({0}): {1}".format(e.errno, e.strerror) + bcolors.ENDC
+            print print_fail("Error: Opening file({0}): {1}".format(e.errno, e.strerror))
 
     def open_file_to_write(self, file_name):
-        print "Open file..."
+        #print "Open file..."
         try:
             self.__file_handler = open(file_name, "wb")
         except IOError as e:
-            print bcolors.FAIL + "Error: Opening file ({0}): {1}".format(e.errno, e.strerror) + bcolors.ENDC
+            print print_fail("Error: Opening file ({0}): {1}".format(e.errno, e.strerror))
 
     def close_file(self):
-        print "Close file..."
+        #print "Close file..."
         try:
             self.__file_handler.close()
         except IOError as e:
-            print bcolors.FAIL + "Error: Closing file ({0}): {1}".format(e.errno, e.strerror) + bcolors.ENDC
+            print print_fail("Error: Closing file ({0}): {1}".format(e.errno, e.strerror))
 
     def read_file(self, size):
         try:
             return self.__file_handler.read(size)
         except IOError as e:
-            print bcolors.FAIL + "Error: reading file ({0}): {1}".format(e.errno, e.strerror) + bcolors.ENDC
+            print print_fail("Error: reading file ({0}): {1}".format(e.errno, e.strerror))
 
     def write_file(self, data):
         try:
             return self.__file_handler.write(data)
         except IOError as e:
-            print bcolors.FAIL + "Error: writing file ({0}): {1}".format(e.errno, e.strerror) + bcolors.ENDC
+            print print_fail("Error: writing file ({0}): {1}".format(e.errno, e.strerror))
 
     def get_file_size(self):
         return os.path.getsize(self.__filepath)
@@ -113,7 +141,7 @@ class FirmwareUpdate(EthernetMaster):
                 self.write_file(reply[FirmwareUpdate.OFFSET_DATA:FirmwareUpdate.OFFSET_DATA + FirmwareUpdate.PACKAGE_SIZE])
                 rest_size -= FirmwareUpdate.PACKAGE_SIZE
             else:
-                print bcolors.FAIL + "Error: Receiving data" + bcolors.ENDC
+                print print_fail("Error: Receiving data")
                 return
         print "All data received"
 
@@ -130,26 +158,28 @@ class FirmwareUpdate(EthernetMaster):
             # Convert Byte into Int
             error = reply_array[FirmwareUpdate.OFFSET_PAYLOAD]
             if error == 0:
-                print bcolors.OKGREEN + "\n\tFlashing successfully finished!\n" + bcolors.ENDC
+                print print_ok("\n\tFlashing successfully finished!\n")
             else:
-                print bcolors.FAIL + "\n\tERROR %s: Flashing Firmware\n" % error + bcolors.ENDC
+                print print_fail("\n\tERROR %s: Flashing Firmware\n" % error)
         else:
-            print bcolors.FAIL + "ERROR: No Reply" + bcolors.ENDC
+            print print_fail("ERROR: No Reply")
 
     def send_image(self, node):
-        reply = 0
         sys.stdout.write("Update Firmware from node ")
         address = dst_addresses[node-1]
-        print address
+        print print_bold(address)
         rest_size = self.get_file_size()
         size = rest_size
         print "Send file with %s bytes.\n" % size
+
+        print "Sending..."
 
         protocol_data = "F103" + "%08X" % size        
 
         page = 0
 
-        while rest_size:            
+        while rest_size:
+            reply = FirmwareUpdate.NACK
             if rest_size > FirmwareUpdate.PACKAGE_SIZE:
                 payload = self.read_file(FirmwareUpdate.PACKAGE_SIZE)
                 rest_size -= FirmwareUpdate.PACKAGE_SIZE
@@ -163,19 +193,19 @@ class FirmwareUpdate(EthernetMaster):
             payload = header + payload.encode('hex') + "%04X" % crc
             page += 1
 
-            while reply != ACK:
+            while reply != FirmwareUpdate.ACK:
                 self.send(address, payload)
 
                 reply_bytes = self.receive()
 
                 if reply_bytes:
                     reply = bytearray(reply_bytes)[FirmwareUpdate.OFFSET_PAYLOAD]
-                    if reply != ACK and reply != ERR_CRC:
-                        sys.stdout.write(bcolors.FAIL + "\n\tError: Sending image" + bcolors.ENDC)
+                    if reply != FirmwareUpdate.ACK and reply != FirmwareUpdate.ERR_CRC:
+                        sys.stdout.write(print_fail("\n\tError: Sending image"))
                         return False
-            else:
-                print bcolors.FAIL + "ERROR: No Reply" + bcolors.ENDC
-                return False
+                else:
+                    print print_fail("\tERROR: No Reply")
+                    return False
 
             self.progress_bar(page, size / FirmwareUpdate.PACKAGE_SIZE)
             
@@ -187,7 +217,7 @@ class FirmwareUpdate(EthernetMaster):
         sys.stdout.write("Get Firmware Version from node ")
         protocol_data = "F104"
         address = dst_addresses[node-1]
-        print address
+        print print_bold(address)
 
         self.send(address, protocol_data)
 
@@ -196,7 +226,7 @@ class FirmwareUpdate(EthernetMaster):
             sys.stdout.write("\tFirmware version: ")
             print reply[FirmwareUpdate.OFFSET_PAYLOAD:FirmwareUpdate.OFFSET_PAYLOAD + 5]
         else:
-            print bcolors.FAIL + "Error: Getting Firmware Version" + bcolors.ENDC
+            print print_fail("Error: Getting Firmware Version")
 
 
 def main():

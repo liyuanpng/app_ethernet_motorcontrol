@@ -183,7 +183,7 @@ void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_tx tx
  *  @param[out]     addr     Interface client for address communication with send().
  */
 void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,
-                      chanend foe_comm, chanend c_flash_data,
+                      chanend foe_comm, chanend foe_signal, chanend c_flash_data,
                       client interface if_motor motor, client interface if_tx tx)
 {
     int nbytes;
@@ -201,7 +201,7 @@ void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,
        }
 
        //protocol_motor_filter((rxbuffer, char[]), nbytes, motor, tx);
-       flash_filter((rxbuffer,char[]), foe_comm, c_flash_data, nbytes, tx);
+       flash_filter((rxbuffer,char[]), foe_comm, foe_signal, c_flash_data, nbytes, tx);
 
     }
 }

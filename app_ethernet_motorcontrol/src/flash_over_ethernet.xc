@@ -22,7 +22,7 @@
 #include "crc.h"
 
 
-#define FIRMWARE_VERSION    "v1.0"
+#define FIRMWARE_VERSION    "v0.1"
 
 //#define DEBUG
 
@@ -192,7 +192,7 @@ int flash_write(char data[], chanend c_flash_data, int nbytes)
 
 
 // Factory image programming
-//#pragma stackfunction 2048
+#pragma stackfunction 4096
 int flash_addUpgradeImage(unsigned address, unsigned imageSize)
 {
     if (imageSize == 0)
@@ -205,7 +205,8 @@ int flash_addUpgradeImage(unsigned address, unsigned imageSize)
     unsigned char checkBuf[PAGE_SIZE];
     //int error = 0;
 
-    printstr("Add Image...");
+    printstr("Add Image at ");
+    printintln(address);
 
     for (int page=1; page < imageSize/PAGE_SIZE+1; page++)
     {
@@ -219,6 +220,7 @@ int flash_addUpgradeImage(unsigned address, unsigned imageSize)
         //if (fl_writePage(address, buf) != 0)
         if (fl_writeImagePage(buf) != 0)
             return 2;
+
 
         if (fl_readPage(address, checkBuf) == 0)
         {
@@ -238,7 +240,7 @@ int flash_addUpgradeImage(unsigned address, unsigned imageSize)
             return 4;
         }
 
-        imageSize -= pageSize;
+        //imageSize -= pageSize;
         address += pageSize;
     }
 
@@ -267,8 +269,24 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
     unsigned update_address;
 
     //flash_setup(1, SPI);
-    fl_connect(SPI);
-    //fl_setProtection(0);
+    if (fl_connect(SPI) != 0)
+    {
+        printstr("Error: Cannot find device.\n");
+        return 6;
+    }
+    if (fl_setProtection(0) != 0)
+    {
+        printstr("Error: Cannot disable protection.\n");
+        return 5;
+    }
+
+    /*
+    if (fl_eraseAll() != 0)
+    {
+        printstr("Error: Cannot erase memory.\n");
+        return 7;
+    }*/
+
 
     if( 0 != fl_getFactoryImage(b) )
     {
@@ -292,6 +310,7 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
     unsigned sectorNum = getSectorAtOrAfter(upgradeAddress);
     unsigned sectorAddress = fl_getSectorAddress(sectorNum);
 
+    //sectorAddress = 0;
     int val = 1;
 
     while (1)
@@ -321,14 +340,6 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
         fl_disconnect();
         return 10 + error_upgrade;
     }
-    /*
-    fl_readPage(sectorAddress,buf);
-
-    for (int i = 0; i < 256; i++)
-    {
-        printhex(buf[i]);
-    }
-    printstrln(" ");*/
 
     if (fl_getNextBootImage(b) != 0)
     {
@@ -346,42 +357,15 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
     printstr(", Factory?: ");
     printuintln(b.factory);
 
-    //fl_setProtection(1);
+
+    fl_setProtection(1);
     fl_disconnect();
 
     return 0;
 }
 
 
-void read_firmware(fl_SPIPorts &SPI, unsigned size)
-{
-    unsigned int imageAddr = 0;
-    unsigned char checkBuf[PAGE_SIZE];
-    unsigned char fileBuf[PAGE_SIZE];
-    unsigned int checkPos = 0;
-    int gotError = 0;
-
-    fl_connect(SPI);
-    fl_setProtection(0);
-
-    while(checkPos < size)
-    {
-      int thisSize = ((size-checkPos)>PAGE_SIZE) ? PAGE_SIZE : (size-checkPos);
-      fl_readPage(checkPos+imageAddr, checkBuf);
-      //fl_readDataPage(checkPos/PAGE_SIZE+1, fileBuf);
-      int i;
-      for(i=0; i < thisSize; i++)
-      {
-          //printstr("Error: verification mismatch at offset ");
-          //printhex(checkPos+i);printchar(' ');
-          //printhex(fileBuf[i]);printchar(' ');
-          //printhexln(checkBuf[i]);
-      }
-      checkPos += PAGE_SIZE;
-    }
-}
-
-void flash_filter(char data[], chanend foe_comm, chanend c_flash_data, int nbytes, client interface if_tx tx)
+void flash_filter(char data[], chanend foe_comm, chanend foe_signal, chanend c_flash_data, int nbytes, client interface if_tx tx)
 {
     int reply;
     char version[] = FIRMWARE_VERSION;

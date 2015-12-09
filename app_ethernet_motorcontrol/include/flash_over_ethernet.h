@@ -73,7 +73,7 @@
  */
 #define FOE_FILE_READY     30
 
-void flash_filter(char data[], chanend foe_comm, chanend c_flash_data, int nbytes, client interface if_tx tx);
+void flash_filter(char data[], chanend foe_comm, chanend foe_signal, chanend c_flash_data, int nbytes, client interface if_tx tx);
 
 void firmware_update_loop(fl_SPIPorts &SPI, chanend foe_comm, chanend c_flash_data, chanend ?reset);
 
