@@ -350,6 +350,7 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
         return 4;
     }
 
+    // Very, very, very important delay!
     delay_milliseconds(50);
     // Add image to boot partition
     int error_upgrade = flash_addUpgradeImage(upgradeAddress, size);

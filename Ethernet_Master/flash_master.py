@@ -54,20 +54,20 @@ def print_bold(text):
 
 
 class FirmwareUpdate(EthernetMaster):
-    PACKAGE_SIZE = 256
-    OFFSET_DATA = 22
-    OFFSET_PAYLOAD = 14
-    ERR_CRC = 0xFC
-    ACK = 0xFF
-    NACK = 0x0
-    CMD_PRE = 0xF1
-    CMD_VERSION = 0x04
-    CMD_WRITE = 0x03
-    CMD_READ = 0x01
-    CMD_FLASH = 0x05
+    PACKAGE_SIZE    = 256
+    OFFSET_DATA     = 22
+    OFFSET_PAYLOAD  = 14
+    ERR_CRC         = 0xFC
+    ACK             = 0xFF
+    NACK            = 0x0
+    CMD_PRE         = 0xF1
+    CMD_VERSION     = 0x04
+    CMD_WRITE       = 0x03
+    CMD_READ        = 0x01
+    CMD_FLASH       = 0x05
 
-    def __init__(self, interface, filepath=''):
-        EthernetMaster.__init__(self, interface, "0801")
+    def __init__(self, iface, filepath=''):
+        EthernetMaster.__init__(self, iface, "0801")
         self.__filepath = filepath
         self.__file_handler = None
         self.__found_nodes = []
@@ -128,7 +128,6 @@ class FirmwareUpdate(EthernetMaster):
         print "Found %d node%s:" % (found, 's' if found > 1 else '')
         print self.__found_nodes
 
-
     @staticmethod
     def progress_bar(progress, max_val):
         """
@@ -136,7 +135,7 @@ class FirmwareUpdate(EthernetMaster):
         @param progress: The actual progress
         @param max_val: The maximum
         """
-        sys.stdout.write("\r[%-50s] %d%%" % ('='*((progress*50)/max_val), ((progress*100)/max_val)))
+        sys.stdout.write("\r[%-50s] %d%%" % ('=' * ((progress * 50) / max_val), ((progress * 100) / max_val)))
         sys.stdout.flush()
 
     @staticmethod
@@ -167,7 +166,7 @@ class FirmwareUpdate(EthernetMaster):
 
         protocol_data = "%02X%02X" % (FirmwareUpdate.CMD_PRE, FirmwareUpdate.CMD_READ) + "%08X" % size
         print protocol_data
-        address = dst_addresses[node-1]
+        address = dst_addresses[node - 1]
         print address
         page = 0
 
@@ -196,7 +195,7 @@ class FirmwareUpdate(EthernetMaster):
         print "Flash Firmware..."
         protocol_data = "%02X%02X" % (FirmwareUpdate.CMD_PRE, FirmwareUpdate.CMD_FLASH)
 
-        self.send(dst_addresses[node-1], protocol_data)
+        self.send(dst_addresses[node - 1], protocol_data)
 
         reply = self.receive()
 
@@ -217,7 +216,7 @@ class FirmwareUpdate(EthernetMaster):
         @return: True if sending was successful, otherwise false
         """
         sys.stdout.write("Update Firmware from node ")
-        address = dst_addresses[node-1]
+        address = dst_addresses[node - 1]
         print print_bold(address)
         rest_size = self.get_file_size()
         size = rest_size
@@ -272,7 +271,7 @@ class FirmwareUpdate(EthernetMaster):
         sys.stdout.write("Get Firmware Version from node ")
 
         protocol_data = "%02X%02X" % (FirmwareUpdate.CMD_PRE, FirmwareUpdate.CMD_VERSION)
-        address = dst_addresses[node-1]
+        address = dst_addresses[node - 1]
         print print_bold(address)
 
         self.send(address, protocol_data)
@@ -303,11 +302,10 @@ def main():
 
     ifname = args.interface
 
-    if args.filepath:
-        path = args.filepath
+    fm = FirmwareUpdate(ifname, args.filepath if args.filepath else '')
+    fm.set_socket()
 
-        fm = FirmwareUpdate(ifname, path)
-        fm.set_socket()
+    if args.filepath:
         fm.set_timeout(500)
 
         fm.open_file_to_read()
@@ -318,18 +316,13 @@ def main():
         fm.close_file()
 
     if args.v:
-        fm = FirmwareUpdate(ifname)
-        fm.set_socket()
         fm.set_timeout(5)
         fm.get_firmware_version(args.node)
 
     if args.scan:
-        fm = FirmwareUpdate(ifname)
-        fm.set_socket()
         fm.set_timeout(0.5)
         fm.scan_slaves()
 
 
-    
 if __name__ == '__main__':
     main()
