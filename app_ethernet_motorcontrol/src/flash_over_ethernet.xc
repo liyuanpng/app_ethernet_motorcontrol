@@ -57,7 +57,6 @@
 
 unsigned image_size = 0;
 
-//#define BUFFER_SIZE     400
 
 int read_data_from_flash(chanend c_flash_data, unsigned page, unsigned char data[PAGE_SIZE], unsigned data_length)
 {
@@ -120,11 +119,7 @@ void flash_read(char data[], chanend c_flash_data)
     }
 
     status = read_data_from_flash(c_flash_data, page+1, data+OFFSET_DATA, byte_count);
-/*
-    for (int i = 0; i < 278; i++)
-        printhex(data[i]);
-    printhexln(0);
-*/
+
     size_rest -= byte_count;
 
     if (size_rest == 0)
@@ -175,7 +170,6 @@ int flash_write(char data[], chanend c_flash_data, int nbytes)
         printint(packetCRC);
         printstr(" ");
         printint(calculatedCRC);
-        // TODO: If CRC is not zero, package must be send again.
         return ERR_CRC;
     }
 
@@ -192,35 +186,28 @@ int flash_write(char data[], chanend c_flash_data, int nbytes)
 
 
 // Factory image programming
-#pragma stackfunction 4096
+#pragma stackfunction 2048
 int flash_addUpgradeImage(unsigned address, unsigned imageSize)
 {
     if (imageSize == 0)
         return 5;
 
-    unsigned pageSize = PAGE_SIZE;
-
     /* Write data. */
     unsigned char buf[PAGE_SIZE];
     unsigned char checkBuf[PAGE_SIZE];
-    //int error = 0;
+    unsigned max_size = imageSize/PAGE_SIZE+1;
 
     printstr("Add Image at ");
     printintln(address);
 
-    for (int page=1; page < imageSize/PAGE_SIZE+1; page++)
+    for (int page=1; page < max_size; page++)
     {
         /* Get a page of data. */
         if (fl_readDataPage(page, buf) != 0)
-           return 1;
+            return 1;
 
-        /* Write the page. */
-        //printstr("Writing page at "); printhexln(address);
-
-        //if (fl_writePage(address, buf) != 0)
         if (fl_writeImagePage(buf) != 0)
             return 2;
-
 
         if (fl_readPage(address, checkBuf) == 0)
         {
@@ -240,8 +227,7 @@ int flash_addUpgradeImage(unsigned address, unsigned imageSize)
             return 4;
         }
 
-        //imageSize -= pageSize;
-        address += pageSize;
+        address += PAGE_SIZE;
     }
 
     printstrln("done");
@@ -263,12 +249,7 @@ static int getSectorAtOrAfter(unsigned address)
 int flash_firmware(fl_SPIPorts &SPI, unsigned size)
 {
     fl_BootImageInfo b;
-    unsigned char buf[256];
 
-    unsigned factory_address;
-    unsigned update_address;
-
-    //flash_setup(1, SPI);
     if (fl_connect(SPI) != 0)
     {
         printstr("Error: Cannot find device.\n");
@@ -279,14 +260,6 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
         printstr("Error: Cannot disable protection.\n");
         return 5;
     }
-
-    /*
-    if (fl_eraseAll() != 0)
-    {
-        printstr("Error: Cannot erase memory.\n");
-        return 7;
-    }*/
-
 
     if( 0 != fl_getFactoryImage(b) )
     {
@@ -304,18 +277,14 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
     printstr(", Factory?: ");
     printuintln(b.factory);
 
-    factory_address = b.startAddress;
-
     unsigned upgradeAddress = b.startAddress + b.size;
     unsigned sectorNum = getSectorAtOrAfter(upgradeAddress);
     unsigned sectorAddress = fl_getSectorAddress(sectorNum);
 
-    //sectorAddress = 0;
     int val = 1;
 
     while (1)
     {
-        //val = fl_startImageAddAt(0x10000, size);
         val = fl_startImageAdd(b, size, 0);
         if (val == 0)
             break;
@@ -332,6 +301,7 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
         return 2;
     }
 
+    delay_seconds(1);
     int error_upgrade = flash_addUpgradeImage(sectorAddress, size);
 
     if (error_upgrade != 0)
@@ -340,6 +310,8 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
         fl_disconnect();
         return 10 + error_upgrade;
     }
+
+    delay_seconds(1);
 
     if (fl_getNextBootImage(b) != 0)
     {
@@ -356,7 +328,6 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
     printuint(b.version);
     printstr(", Factory?: ");
     printuintln(b.factory);
-
 
     fl_setProtection(1);
     fl_disconnect();
@@ -405,133 +376,9 @@ void flash_filter(char data[], chanend foe_comm, chanend foe_signal, chanend c_f
     }
 }
 
-
-static inline unsigned char read_from_channel_as_uchar(chanend c)
-{
-    /* FIXME: how to do this without a tmp variable? */
-    int tmp;
-    c :> tmp;
-    return (unsigned char) tmp;
-}
-
-
-
-/*
- * If a file is available it is read by check_file_access() and the filesystem
- * becomes formated for the next file.
- *
- * Note: this implementation allows firmware update for only upto 18 nodes connected over DX COM.
- */
-static unsigned check_file_access(fl_SPIPorts &SPI, chanend foe_comm, unsigned address, chanend ?reset_out)
-{
-    static int write_state = IDLE;
-
-    unsigned char buffer[BUFFER_SIZE];
-    unsigned size;
-    int command;
-    int start_end_token;
-    int flag_node = 0;
-    int status;
-    int ctmp;
-
-    foe_comm <: FOE_FILE_READ;
-    foe_comm <: BUFFER_SIZE;
-    foe_comm :> ctmp;
-
-    switch (ctmp)
-    {
-    case FOE_FILE_DATA:
-        foe_comm :> size;
-
-        if (size == 2)
-        {        /* FoE message header */
-            foe_comm :> start_end_token;
-            foe_comm :> command;
-
-            if (start_end_token == START_UPDATE)
-            {
-                write_state = START_FLASH;
-            }
-            else if (start_end_token == END_UPDATE)
-            {
-                write_state = IDLE;
-                fl_endWriteImage();
-
-                if (!isnull(reset_out))
-                {
-                    reset_out <: 1;
-                }
-            }
-        }
-        else if (size >= 100)
-        {
-            if (write_state == START_FLASH)
-            {
-                flash_setup(1, SPI);
-                address = 0;
-                write_state = FLASH;
-            }
-
-            for (int i=0; i<size; i++)
-            {
-                buffer[i] = read_from_channel_as_uchar(foe_comm);
-            }
-
-            flash_buffer(buffer, size, address);
-            address += size;
-        } else {
-            for (int i=0; i<size; i++)
-            {
-                foe_comm :> int _; // discard data
-            }
-        }
-        break;
-
-    case FOE_FILE_ERROR:
-        #ifdef DEBUG
-        printstr("\nfoe error\n");
-        #endif
-        break;
-
-    default:
-        break;
-    }
-
-    /* clean up file system to permit next foe transfer */
-
-    foe_comm <: FOE_FILE_FREE;
-    foe_comm :> ctmp;
-
-    switch (ctmp) {
-    case FOE_FILE_ACK:
-        #ifdef DEBUG
-        printstr("[check_file_access()] filesystem is clear again\n");
-        #endif
-        break;
-    case FOE_FILE_ERROR:
-        #ifdef DEBUG
-        printstr("[check_file_access()] error during filesystem clean up\n"); //FIXME needs handling
-        #endif
-        break;
-    default:
-        #ifdef DEBUG
-        printstr("[check_file_access()] unknown return value\n");
-        #endif
-        break;
-    }
-    return address;
-}
-
-
 void firmware_update_loop(fl_SPIPorts &SPI, chanend foe_comm, chanend c_flash_data, chanend ?reset)
 {
-    timer t;
-    unsigned ts;
-    const unsigned delay = 100000;
-    char name[] = "test";
-    int notification;
     int command;
-    unsigned address = 0;
     int data_length; /* data length exceeds page length error */
     int page;        /* page exceeds error, no data partition found error */
     unsigned char data[PAGE_SIZE];
@@ -542,57 +389,6 @@ void firmware_update_loop(fl_SPIPorts &SPI, chanend foe_comm, chanend c_flash_da
     {
         select
         {
-        case foe_comm :> notification:
-            /* Firmware update over EtherCAT (signaled over foe_signal) */
-            if (notification != FOE_FILE_READY)
-            {
-                t :> ts;
-                t when timerafter(ts+delay) :> void;
-                continue;
-            }
-
-            /* check if a file is present, FIXME: this could be realized by the signaling channel! */
-            foe_comm <: FOE_FILE_OPEN;
-
-            for (int i=0; name[i] != '\0'; i++)
-            {
-                foe_comm <: (int) name[i];
-            }
-
-            foe_comm <: (int) '\0';
-
-            int ctmp;
-            foe_comm :> ctmp;
-
-            switch (ctmp)
-            {
-                case FOE_FILE_ERROR:
-                    #ifdef DEBUG
-                    printstr("Error file is not ready\n");
-                    #endif
-                    break;
-
-                case FOE_FILE_ACK:
-                    /* If file is ready read it and flash to device */
-                    address = check_file_access(SPI, foe_comm, address, reset);
-                    #ifdef DEBUG
-                    printintln(address);
-                    #endif
-                    break;
-
-                default:
-                    #ifdef DEBUG
-                    printstr("Unknown state returned\n");
-                    #endif
-                    break;
-            }
-            // delay = 100;
-            // t :> ts;
-            //t when timerafter(ts+delay) :> void;
-            break;
-
-            //TODO Firmware update over any other Comm interfaces
-
             /* Data Field update */
         case c_flash_data :> command: // read/write
             if (command == CMD_READ)
@@ -629,17 +425,13 @@ void firmware_update_loop(fl_SPIPorts &SPI, chanend foe_comm, chanend c_flash_da
             }
             else if (command == CMD_FLASH_FW)
             {
+                // Read image size from the first data page
                 __read_data_flash(SPI, 0, data);
                 unsigned size = (data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3]);
 
                 int error = flash_firmware(SPI, size);
 
-                if (error)
-                {
-                    printstrln("Error: Flash Firmware!");
-                }
                 c_flash_data <: error;
-                //read_firmware(SPI, size);
             }
             break;
         }
