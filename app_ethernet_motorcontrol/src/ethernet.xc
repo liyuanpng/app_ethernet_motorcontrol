@@ -18,14 +18,14 @@
 #include <position_ctrl_client.h>
 #include <statemachine.h>
 
-#include "protocol.h"
+#include "ethernet.h"
 #include "flash_over_ethernet.h"
 
 #define BUFFER_SIZE 400
 #define HTONL(x)    (( (x & 0xff) << 24) | (((x >> 8) & 0xff) << 16) | (((x >> 16) & 0xff) << 8) | ((x >> 24) & 0xff) )
 
 
-int protocol_controlling(chanend c_position_ctrl, char cmd, int param)
+int ethernet_controlling(chanend c_position_ctrl, char cmd, int param)
 {
     int ret = 0;
     switch (cmd)
@@ -96,7 +96,7 @@ void motor_controlling_server(server interface if_motor motor, chanend c_positio
  *  @param[in,out]  led      Interface client for LED communication with led_server().
  *  @param[out]     addr     Interface client for address communication with send().
  */
-int protocol_motor_filter(char data[], int nBytes, client interface if_motor motor, client interface if_tx tx)
+int ethernet_motor_filter(char data[], int nBytes, client interface if_motor motor, client interface if_tx tx)
 {
     int reply, tmp;
     int16_t param = 0;
@@ -134,7 +134,7 @@ int protocol_motor_filter(char data[], int nBytes, client interface if_motor mot
  *  @param[in, out] data    Buffer with the receive packet.
  *  @param[in]      reply   Answer from led_server().
  */
-void protocol_make_packet(char data[])
+void ethernet_make_packet(char data[])
 {
     char tmp[BUFFER_SIZE];
 
@@ -152,7 +152,7 @@ void protocol_make_packet(char data[])
  *  @param dataToP2     Channel for port 2.
  *  @param[in] addr     Interface with the mac-address from filter().
  */
-void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_tx tx)
+void ethernet_send(chanend dataToP1, chanend dataToP2, server interface if_tx tx)
 {
     char txbuffer[BUFFER_SIZE];
     int nBytes;
@@ -164,7 +164,7 @@ void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_tx tx
             case tx.msg(char reply[], int nbytes):
                 memcpy(txbuffer, reply, nbytes);
                 nBytes = nbytes;
-                protocol_make_packet(txbuffer);
+                ethernet_make_packet(txbuffer);
                 break;
         }
         if (nBytes < 64)
@@ -182,8 +182,7 @@ void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_tx tx
  *  @param[in,out]  led      Interface client for LED communication with led_server().
  *  @param[out]     addr     Interface client for address communication with send().
  */
-void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,
-                      chanend foe_comm, chanend foe_signal, chanend c_flash_data,
+void ethernet_fetcher(chanend dataFromP1, chanend dataFromP2, chanend c_flash_data,
                       client interface if_motor motor, client interface if_tx tx)
 {
     int nbytes;
@@ -200,8 +199,8 @@ void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,
            //                break;
        }
 
-       //protocol_motor_filter((rxbuffer, char[]), nbytes, motor, tx);
-       flash_filter((rxbuffer,char[]), foe_comm, foe_signal, c_flash_data, nbytes, tx);
+       //ethernet_motor_filter((rxbuffer, char[]), nbytes, motor, tx);
+       flash_filter((rxbuffer,char[]), c_flash_data, nbytes, tx);
 
     }
 }

@@ -68,12 +68,12 @@ class EthernetMaster:
     #   @brief Receives reply.
     #   @return     Reply.
     #
-    def receive(self):
+    def receive(self, error_msg=True):
         try:
-            #b = bytearray()            
-            return self.__socket.recv(1024)#b.extend(self.__socket.recv(1024))
+            return self.__socket.recv(1024)
         except socket.timeout:
-            print '\033[93m' + "Warning: Receiving reached Timeout!" + '\033[0m'
+            if error_msg:
+                print '\033[93m' + "Warning: Receiving reached Timeout!" + '\033[0m'
     
     ##
     #   @brief Creates the socket and bind it to the interface.

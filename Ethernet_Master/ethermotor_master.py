@@ -3,7 +3,7 @@ import re
 import traceback
 import os
 
-from ethermotor_settings import *
+from ethernet_settings import *
 from ethernet_server import *
 
 

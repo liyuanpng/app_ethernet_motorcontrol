@@ -37,7 +37,7 @@
 //Configure your motor parameters in config/bldc_motor_config.h
 #include <bldc_motor_config.h>
 
-#include "protocol.h"
+#include "ethernet.h"
 #include "flash_over_ethernet.h"
 
 
@@ -264,8 +264,7 @@ int main(void)
                 // Port 2
                 //ethernet_server_p2(mii_p2, smi_p2, MAC_OUTPUT, rxP2, txP2);
 
-                firmware_update_loop(p_spi_flash, foe_comm, c_flash_data, null); // firmware update over ethernet
-                //firmware_update_loop(p_spi_flash, foe_comm, foe_signal, c_flash_data, c_nodes, null);
+                firmware_update_loop(p_spi_flash, c_flash_data, null); // firmware update over ethernet
             }
         }
 
@@ -287,9 +286,9 @@ int main(void)
 
                 motor_controlling_server(motor, c_position_ctrl, c_rotary_angle);
 
-                protocol_send(dataToP1, dataToP2, tx);
+                ethernet_send(dataToP1, dataToP2, tx);
 
-                protocol_fetcher(dataFromP1, dataFromP2, foe_comm, foe_signal, c_flash_data, motor, tx);
+                ethernet_fetcher(dataFromP1, dataFromP2, c_flash_data, motor, tx);
             }
         }
 

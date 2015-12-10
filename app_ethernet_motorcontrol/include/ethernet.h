@@ -1,12 +1,12 @@
 /*
- * protocol.h
+ * ethernet.h
  *
  *  Created on: Oct 1, 2015
  *      Author: hstroetgen
  */
 
-#ifndef PROTOCOL_H_
-#define PROTOCOL_H_
+#ifndef ETHERNET_H_
+#define ETHERNET_H_
 
 #include <rotary_sensor.h>
 
@@ -24,10 +24,9 @@ interface if_tx
 };
 
 void motor_controlling_server(server interface if_motor motor, chanend c_position_ctrl, chanend c_rotary_angle);
-int protocol_motor_filter(char data[], int nBytes, client interface if_motor motor, client interface if_tx tx);
-void protocol_send(chanend dataToP1, chanend dataToP2, server interface if_tx tx);
-void protocol_fetcher(chanend dataFromP1, chanend dataFromP2,
-                      chanend foe_comm, chanend foe_signal, chanend c_flash_data,
+int ethernet_motor_filter(char data[], int nBytes, client interface if_motor motor, client interface if_tx tx);
+void ethernet_send(chanend dataToP1, chanend dataToP2, server interface if_tx tx);
+void ethernet_fetcher(chanend dataFromP1, chanend dataFromP2, chanend c_flash_data,
                       client interface if_motor motor, client interface if_tx tx);
 
-#endif /* PROTOCOL_H_ */
+#endif /* ethernet_H_ */
