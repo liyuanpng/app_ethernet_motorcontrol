@@ -136,9 +136,9 @@ int ethernet_motor_filter(char data[], int nBytes, client interface if_motor mot
  */
 void ethernet_make_packet(char data[])
 {
-    char tmp[BUFFER_SIZE];
+    char tmp[12];
 
-    memset(tmp, 0, BUFFER_SIZE);
+    memset(tmp, 0, 12);
 
     /* Change order of MAC-addresses for reply packet */
     memcpy((tmp + SRC_MAC_BYTE), (data + DST_MAC_BYTE), 6);
@@ -167,6 +167,7 @@ void ethernet_send(chanend dataToP1, chanend dataToP2, server interface if_tx tx
                 ethernet_make_packet(txbuffer);
                 break;
         }
+        // Minimal length of a ethernet packet is 64 bytes.
         if (nBytes < 64)
             nBytes = 64;
 

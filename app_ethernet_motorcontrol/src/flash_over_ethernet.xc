@@ -45,7 +45,7 @@
 #define NACK !ACK
 #define ERR_CRC 0xfc
 
-unsigned image_size = 0;
+int g_start_data_page = -1;
 
 /**
  * @brief Reads data from the channel. Other side of the channel is in function firmware_update_loop
@@ -150,7 +150,7 @@ int flash_write(char data[], chanend c_flash_data)
     int page = 0;
     int status = 0;
     int byte_count = 0;
-    uint16_t packetCRC = 0, calculatedCRC = 0;
+    uint16_t calculatedCRC = 0;
 
     // Get page number
     page = data[OFFSET_PAGE] << 8 | data[OFFSET_PAGE+1];
@@ -177,7 +177,7 @@ int flash_write(char data[], chanend c_flash_data)
         byte_count = size_rest;
     }
 
-    // CRC must be Zero, if everything is OK.
+    // CRC is Zero, if everything is OK.
     calculatedCRC = crc16(data+OFFSET_DATA, data+OFFSET_END_W_CRC, 0);
 
     if (calculatedCRC)
@@ -226,16 +226,19 @@ int flash_addUpgradeImage(unsigned address, unsigned imageSize)
     printintln(address);
 #endif
 
-    // TODO: Remove hardcoded first page (1).
-    for (int page=1; page < max_size; page++)
+    //if (g_start_data_page < 0)
+      //  return 2;
+
+    // TODO: Remove hardcoded start page (1). The page number is delivered by the flash_master
+    for (int page = 1; page < max_size; page++)
     {
         /* Get a page of data. */
         if (fl_readDataPage(page, buf) != 0)
-            return 2;
+            return 3;
 
         // Wright page behind factory image
         if (fl_writeImagePage(buf) != 0)
-            return 3;
+            return 4;
 
         // Verify page
         if (fl_readPage(address, checkBuf) == 0)
@@ -249,13 +252,13 @@ int flash_addUpgradeImage(unsigned address, unsigned imageSize)
                     printhex(buf[i]);printchar(' ');
                     printhexln(checkBuf[i]);
                     #endif
-                    return 4;
+                    return 5;
                 }
             }
         }
         else
         {
-            return 5;
+            return 6;
         }
 
         address += PAGE_SIZE;
@@ -280,6 +283,9 @@ static int getSectorAtOrAfter(unsigned address)
 
 /**
  * @brief Flashes the firmware
+ * @param SPI   The struct with the spi ports. Defined in the BSP *.inc file.
+ * @param size  Size of the image.
+ * @return Error code.
  */
 int flash_firmware(fl_SPIPorts &SPI, unsigned size)
 {
@@ -350,7 +356,7 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
         return 4;
     }
 
-    // Very, very, very important delay!
+    // Very, very, very important delay! Reasons why we have to wait here are unknown
     delay_milliseconds(50);
     // Add image to boot partition
     int error_upgrade = flash_addUpgradeImage(upgradeAddress, size);
@@ -391,7 +397,13 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
     return 0;
 }
 
-
+/**
+ * @brief Checks if a packet is a firmware update.
+ * @param data  Ethernet packet.
+ * @param c_flash_data  Channel for sending and receiving data to the flash function.
+ * @param nbytes    Size of the ethernet packet. Actually it isn't used at the moment.
+ * @param tx        Interface for reply
+ */
 void flash_filter(char data[], chanend c_flash_data, int nbytes, client interface if_tx tx)
 {
     int reply;

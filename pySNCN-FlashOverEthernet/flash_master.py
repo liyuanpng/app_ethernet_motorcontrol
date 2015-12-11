@@ -9,6 +9,7 @@ import argparse
 import os
 import sys
 from ctypes import c_ushort
+import threading
 
 from ethernet_master import *
 from ethernet_settings import *
@@ -54,23 +55,12 @@ def print_bold(text):
 
 
 class FirmwareUpdate(EthernetMaster):
-    PACKAGE_SIZE    = 256
-    OFFSET_DATA     = 22
-    OFFSET_PAYLOAD  = 14
-    ERR_CRC         = 0xFC
-    ACK             = 0xFF
-    NACK            = 0x0
-    CMD_PRE         = 0xF1
-    CMD_VERSION     = 0x04
-    CMD_WRITE       = 0x03
-    CMD_READ        = 0x01
-    CMD_FLASH       = 0x05
-
     def __init__(self, iface, filepath=''):
-        EthernetMaster.__init__(self, iface, "0801")
+        EthernetMaster.__init__(self, iface, ethertype)
         self.__filepath = filepath
         self.__file_handler = None
         self.__found_nodes = []
+        self.__thread_progress = 0
 
     def open_file_to_read(self):
         try:
@@ -109,27 +99,27 @@ class FirmwareUpdate(EthernetMaster):
         """
         @note: Iterates through the mac address list and asks for the firmware version. The result will be stored.
         """
-        print "Scanning devices..."
+        print "\nScanning devices..."
         nodes = len(dst_addresses)
         for node in range(nodes):
-            self.progress_bar(node, nodes)
-            protocol_data = "%02X%02X" % (FirmwareUpdate.CMD_PRE, FirmwareUpdate.CMD_VERSION)
+            self.__progress_bar(node, nodes)
+            protocol_data = "%02X%02X" % (CMD_PRE, CMD_VERSION)
             address = dst_addresses[node]
 
             self.send(address, protocol_data)
-            reply = self.receive(False)
+            reply = self.receive(error_msg=False)
 
             if reply:
                 self.__found_nodes.append(address)
 
-        self.progress_bar(nodes, nodes)
+        self.__progress_bar(nodes, nodes)
         found = len(self.__found_nodes)
         print "\n...done"
         print "Found %d node%s:" % (found, 's' if found > 1 else '')
         print self.__found_nodes
 
     @staticmethod
-    def progress_bar(progress, max_val):
+    def __progress_bar(progress, max_val):
         """
         @note: Calculates and shows a progress bar.
         @param progress: The actual progress
@@ -139,7 +129,7 @@ class FirmwareUpdate(EthernetMaster):
         sys.stdout.flush()
 
     @staticmethod
-    def crc16(data):
+    def __crc16(data):
         """
         @note: Calculates the CRC16 checksum for an data array.
         @param data: Data array.
@@ -155,6 +145,18 @@ class FirmwareUpdate(EthernetMaster):
             crc = c_ushort(crc.value ^ (crc.value & 0xff) << 5)
         return crc.value
 
+    def __read_image(self):
+        image_page_array = []
+        self.open_file_to_read()
+        while True:
+            chunk = self.read_file(PACKAGE_SIZE)
+            if chunk:
+                image_page_array.append(chunk)
+            else:
+                break
+        self.close_file()
+        return image_page_array
+
     def receive_data(self, node, size):
         """
         @note: Receives data from the node and stores them in a data. (Obsolete, used only for debugging)
@@ -164,7 +166,7 @@ class FirmwareUpdate(EthernetMaster):
         rest_size = size
         print "Receive file with %s bytes." % size
 
-        protocol_data = "%02X%02X" % (FirmwareUpdate.CMD_PRE, FirmwareUpdate.CMD_READ) + "%08X" % size
+        protocol_data = "%02X%02X" % (CMD_PRE, CMD_READ) + "%08X" % size
         print protocol_data
         address = dst_addresses[node - 1]
         print address
@@ -180,8 +182,8 @@ class FirmwareUpdate(EthernetMaster):
             reply = self.receive()
 
             if reply:
-                self.write_file(reply[FirmwareUpdate.OFFSET_DATA:FirmwareUpdate.OFFSET_DATA + FirmwareUpdate.PACKAGE_SIZE])
-                rest_size -= FirmwareUpdate.PACKAGE_SIZE
+                self.write_file(reply[OFFSET_DATA:OFFSET_DATA + PACKAGE_SIZE])
+                rest_size -= PACKAGE_SIZE
             else:
                 print print_fail("Error: Receiving data")
                 return
@@ -193,7 +195,7 @@ class FirmwareUpdate(EthernetMaster):
         @param node: Node number, to which the upgrade image will be send.
         """
         print "Flash Firmware..."
-        protocol_data = "%02X%02X" % (FirmwareUpdate.CMD_PRE, FirmwareUpdate.CMD_FLASH)
+        protocol_data = "%02X%02X" % (CMD_PRE, CMD_FLASH)
 
         self.send(dst_addresses[node - 1], protocol_data)
 
@@ -201,7 +203,7 @@ class FirmwareUpdate(EthernetMaster):
 
         if reply:
             # Convert Byte into Int
-            error = bytearray(reply)[FirmwareUpdate.OFFSET_PAYLOAD]
+            error = bytearray(reply)[OFFSET_PAYLOAD]
             if error == 0:
                 print print_ok("\n\tFlashing successfully finished!\n")
             else:
@@ -209,56 +211,62 @@ class FirmwareUpdate(EthernetMaster):
         else:
             print print_fail("ERROR: No Reply")
 
-    def send_image(self, node):
+    def upgrade_nodes(self, nodes):
         """
         @note: Sends an upgrade image to a node.
-        @param node: Node number, to which the upgrade image will be send.
+        @param nodes: Node number, to which the upgrade image will be send.
         @return: True if sending was successful, otherwise false
         """
         sys.stdout.write("Update Firmware from node ")
-        address = dst_addresses[node - 1]
-        print print_bold(address)
-        rest_size = self.get_file_size()
-        size = rest_size
+        #address = dst_addresses[node - 1]
+        #print print_bold(address)
+        size = self.get_file_size()
         print "Send file with %s bytes:\n" % size
         print "Sending..."
 
-        protocol_data = "%02X%02X" % (FirmwareUpdate.CMD_PRE, FirmwareUpdate.CMD_WRITE) + "%08X" % size
+        image = self.__read_image()
 
-        page = 0
+        threads = []
+        lock = threading.Lock()
+        for node in nodes:
+            print "Start thread %s" % node
+            address = dst_addresses[node - 1]
+            t = threading.Thread(target=self.send_image, args=(self.socket_accept(), address, image, size, lock,))
+            threads.append(t)
+            t.start()
 
-        while rest_size:
-            reply = FirmwareUpdate.NACK
-            if rest_size > FirmwareUpdate.PACKAGE_SIZE:
-                payload = self.read_file(FirmwareUpdate.PACKAGE_SIZE)
-                rest_size -= FirmwareUpdate.PACKAGE_SIZE
-            else:
-                payload = self.read_file(rest_size)
-                rest_size = 0
+            #self.__progress_bar(page, size / PACKAGE_SIZE)
 
-            crc = self.crc16(payload)
+    def send_image(self, (conn, socket_addr), address, image, size, lock):
+        print "Start %s" % address
+        protocol_data = "%02X%02X" % (CMD_PRE, CMD_WRITE) + "%08X" % size
 
-            header = protocol_data + "%04X" % page
-            payload = header + payload.encode('hex') + "%04X" % crc
-            page += 1
+        page_index = 0
+        for page in image:
+            print "Page: %s" % page
+            reply = NACK
 
-            # While the reply is not ACk, try to send the package again. Reason should only be a CRC error.
-            while reply != FirmwareUpdate.ACK:
-                self.send(address, payload)
+            crc = self.__crc16(page)
 
-                reply_bytes = self.receive()
+            header = protocol_data + "%04X" % page_index
+            payload = header + page.encode('hex') + "%04X" % crc
+            page_index += 1
+
+            # While the reply is not ACK, try to send the package again. Reason should only be a CRC error.
+            while reply != ACK:
+                self.send(address, payload, conn)
+
+                reply_bytes = self.receive(own_socket=conn)
 
                 if reply_bytes:
-                    reply = bytearray(reply_bytes)[FirmwareUpdate.OFFSET_PAYLOAD]
-                    if reply != FirmwareUpdate.ACK and reply != FirmwareUpdate.ERR_CRC:
+                    reply = bytearray(reply_bytes)[OFFSET_PAYLOAD]
+                    if reply != ACK and reply != ERR_CRC:
                         sys.stdout.write(print_fail("\n\tError: Sending image"))
                         return False
                 else:
                     print print_fail("\tERROR: No Reply")
                     return False
 
-            self.progress_bar(page, size / FirmwareUpdate.PACKAGE_SIZE)
-            
         sys.stdout.write("\n\n")
 
         return True
@@ -270,7 +278,7 @@ class FirmwareUpdate(EthernetMaster):
         """
         sys.stdout.write("Get Firmware Version from node ")
 
-        protocol_data = "%02X%02X" % (FirmwareUpdate.CMD_PRE, FirmwareUpdate.CMD_VERSION)
+        protocol_data = "%02X%02X" % (CMD_PRE, CMD_VERSION)
         address = dst_addresses[node - 1]
         print print_bold(address)
 
@@ -279,7 +287,7 @@ class FirmwareUpdate(EthernetMaster):
 
         if reply:
             sys.stdout.write("\tFirmware version: ")
-            print reply[FirmwareUpdate.OFFSET_PAYLOAD:FirmwareUpdate.OFFSET_PAYLOAD + 5]
+            print reply[OFFSET_PAYLOAD:OFFSET_PAYLOAD + 5]
         else:
             print print_fail("Error: Getting Firmware Version")
 
@@ -306,14 +314,14 @@ def main():
     fm.set_socket()
 
     if args.filepath:
+
         fm.set_timeout(500)
 
-        fm.open_file_to_read()
-
-        if fm.send_image(args.node):
-            fm.flash_firmware(args.node)
-
-        fm.close_file()
+        if args.all:
+            fm.upgrade_nodes([1, 6])
+        else:
+            if fm.send_image([args.node]):
+                fm.flash_firmware(args.node)
 
     if args.v:
         fm.set_timeout(5)
