@@ -22,9 +22,9 @@
 #include "crc.h"
 
 
-#define FIRMWARE_VERSION    "v0.1"
+#define FIRMWARE_VERSION    "v2.0"
 
-//#define DEBUG
+#define DEBUG
 
 #define PAGE_SIZE       256
 
@@ -183,6 +183,7 @@ int flash_write(char data[], chanend c_flash_data)
     if (calculatedCRC)
     {
 #ifdef DEBUG
+        uint16_t packetCRC;
         packetCRC = data[OFFSET_CRC] << 8 | data[OFFSET_CRC + 1];
         printstr("Wrong CRC: ");
         printint(packetCRC);

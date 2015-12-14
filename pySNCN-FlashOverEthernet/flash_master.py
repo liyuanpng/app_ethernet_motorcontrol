@@ -13,58 +13,21 @@ import threading
 
 from ethernet_master import *
 from ethernet_settings import *
-
-
-HEADER = '\033[95m'
-OKBLUE = '\033[94m'
-OKGREEN = '\033[92m'
-WARNING = '\033[93m'
-FAIL = '\033[91m'
-ENDC = '\033[0m'
-BOLD = '\033[1m'
-UNDERLINE = '\033[4m'
-
-
-def tags(tag_name):
-    """
-    @note: Decorate function for the printing.
-    @param tag_name: ASCII tag from the list above.
-    @return: Returns the manipulated string.
-    """
-    def tags_decorator(func):
-        def func_wrapper(text):
-            return "{0}{1}{2}".format(tag_name, func(text), ENDC)
-        return func_wrapper
-    return tags_decorator
-
-@tags(FAIL)
-def print_fail(text):
-    return text
-
-@tags(OKGREEN)
-def print_ok(text):
-    return text
-
-@tags(WARNING)
-def print_warning(text):
-    return text
-
-@tags(BOLD)
-def print_bold(text):
-    return text
+from node import *
+from print_color import *
 
 
 class FirmwareUpdate(EthernetMaster):
-    def __init__(self, iface, filepath=''):
+    def __init__(self, iface, filename=''):
         EthernetMaster.__init__(self, iface, ethertype)
-        self.__filepath = filepath
+        self.__filename = filename
         self.__file_handler = None
         self.__found_nodes = []
         self.__thread_progress = 0
 
     def open_file_to_read(self):
         try:
-            self.__file_handler = open(self.__filepath, "rb")
+            self.__file_handler = open(self.__filename, "rb")
         except IOError as e:
             print print_fail("Error: Opening file({0}): {1}".format(e.errno, e.strerror))
 
@@ -93,7 +56,7 @@ class FirmwareUpdate(EthernetMaster):
             print print_fail("Error: writing file ({0}): {1}".format(e.errno, e.strerror))
 
     def get_file_size(self):
-        return os.path.getsize(self.__filepath)
+        return os.path.getsize(self.__filename)
 
     def scan_slaves(self):
         """
@@ -128,25 +91,9 @@ class FirmwareUpdate(EthernetMaster):
         sys.stdout.write("\r[%-50s] %d%%" % ('=' * ((progress * 50) / max_val), ((progress * 100) / max_val)))
         sys.stdout.flush()
 
-    @staticmethod
-    def __crc16(data):
-        """
-        @note: Calculates the CRC16 checksum for an data array.
-        @param data: Data array.
-        @return: The crc value.
-        """
-        crc = c_ushort(0)
-
-        for byte in data:            
-            crc = c_ushort((crc.value >> 8) | (crc.value << 8))
-            crc = c_ushort(crc.value ^ ord(byte))
-            crc = c_ushort(crc.value ^ (crc.value & 0xff) >> 4)
-            crc = c_ushort(crc.value ^ crc.value << 12)
-            crc = c_ushort(crc.value ^ (crc.value & 0xff) << 5)
-        return crc.value
-
-    def __read_image(self):
+    def __read_image(self, node):
         image_page_array = []
+        self.__filename += '_%s' % node
         self.open_file_to_read()
         while True:
             chunk = self.read_file(PACKAGE_SIZE)
@@ -189,87 +136,72 @@ class FirmwareUpdate(EthernetMaster):
                 return
         print "All data received"
 
-    def flash_firmware(self, node):
+    def flash_firmware(self, nodes):
         """
         @note: Sends a request for a firmware update. That request starts the upgrade process.
-        @param node: Node number, to which the upgrade image will be send.
+        @param nodes: Node number, to which the upgrade image will be send.
         """
         print "Flash Firmware..."
-        protocol_data = "%02X%02X" % (CMD_PRE, CMD_FLASH)
 
-        self.send(dst_addresses[node - 1], protocol_data)
+        threads = []
+        lock = threading.Lock()
+        print "Starte Threads"
 
-        reply = self.receive()
+        for node in nodes:
+            address = dst_addresses[node - 1]
+            t = FlashFirmware(address, lock)
+            threads.append(t)
+            t.start()
 
-        if reply:
-            # Convert Byte into Int
-            error = bytearray(reply)[OFFSET_PAYLOAD]
-            if error == 0:
-                print print_ok("\n\tFlashing successfully finished!\n")
-            else:
-                print print_fail("\n\tERROR %s: Flashing Firmware\n" % error)
+        print "Warte bis alle terminieren"
+
+        print "Es laufen gerade %s Threads" % FlashFirmware.thread_count
+        for t in threads:
+            t.join()
+
+        if FlashFirmware.thread_count.thread_count == 0:
+            print "Alle Threads tot"
         else:
-            print print_fail("ERROR: No Reply")
+            print "Da lebt noch was..."
 
-    def upgrade_nodes(self, nodes):
+    def send_images(self, nodes):
         """
         @note: Sends an upgrade image to a node.
         @param nodes: Node number, to which the upgrade image will be send.
         @return: True if sending was successful, otherwise false
         """
-        sys.stdout.write("Update Firmware from node ")
-        #address = dst_addresses[node - 1]
-        #print print_bold(address)
+        print "Update Firmware from %s nodes\n" % len(nodes)
         size = self.get_file_size()
         print "Send file with %s bytes:\n" % size
         print "Sending..."
 
-        image = self.__read_image()
-
         threads = []
         lock = threading.Lock()
+        print "Start Threads"
+
         for node in nodes:
-            print "Start thread %s" % node
+            image = self.__read_image(node)
             address = dst_addresses[node - 1]
-            t = threading.Thread(target=self.send_image, args=(self.socket_accept(), address, image, size, lock,))
+            t = SendImage(image, address, size, lock)
             threads.append(t)
             t.start()
 
+        print "Wait until every thread is terminated"
+
+        print "%s threads are running" % SendImage.thread_count
+        success = True
+        for t in threads:
+            t.join()
+            success &= t.success
+
+        if SendImage.thread_count == 0:
+            print "Every thread is dead"
+        else:
+            print "There is something still living..."
+
+        return success
+
             #self.__progress_bar(page, size / PACKAGE_SIZE)
-
-    def send_image(self, (conn, socket_addr), address, image, size, lock):
-        print "Start %s" % address
-        protocol_data = "%02X%02X" % (CMD_PRE, CMD_WRITE) + "%08X" % size
-
-        page_index = 0
-        for page in image:
-            print "Page: %s" % page
-            reply = NACK
-
-            crc = self.__crc16(page)
-
-            header = protocol_data + "%04X" % page_index
-            payload = header + page.encode('hex') + "%04X" % crc
-            page_index += 1
-
-            # While the reply is not ACK, try to send the package again. Reason should only be a CRC error.
-            while reply != ACK:
-                self.send(address, payload, conn)
-
-                reply_bytes = self.receive(own_socket=conn)
-
-                if reply_bytes:
-                    reply = bytearray(reply_bytes)[OFFSET_PAYLOAD]
-                    if reply != ACK and reply != ERR_CRC:
-                        sys.stdout.write(print_fail("\n\tError: Sending image"))
-                        return False
-                else:
-                    print print_fail("\tERROR: No Reply")
-                    return False
-
-        sys.stdout.write("\n\n")
-
-        return True
 
     def get_firmware_version(self, node):
         """
@@ -318,9 +250,10 @@ def main():
         fm.set_timeout(500)
 
         if args.all:
-            fm.upgrade_nodes([1, 6])
+            if fm.send_images([1, 6]):
+                fm.flash_firmware([1, 6])
         else:
-            if fm.send_image([args.node]):
+            if fm.send_images([args.node]):
                 fm.flash_firmware(args.node)
 
     if args.v:

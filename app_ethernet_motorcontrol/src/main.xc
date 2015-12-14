@@ -129,7 +129,6 @@ void get_rotary_sensor_angle(chanend c_rotary_angle)
                 break;
         }
     }
-
 }
 
 /**

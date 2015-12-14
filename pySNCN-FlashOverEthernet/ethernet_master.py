@@ -1,6 +1,9 @@
 import socket
 import fcntl
 import struct
+from ctypes import c_ushort
+
+from print_color import *
 
 
 class EthernetMaster:
@@ -29,6 +32,23 @@ class EthernetMaster:
     @staticmethod
     def __strToHex(data):
         return data.replace(":", "").decode('hex')
+
+    @staticmethod
+    def crc16(data):
+        """
+        @note: Calculates the CRC16 checksum for an data array.
+        @param data: Data array.
+        @return: The crc value.
+        """
+        crc = c_ushort(0)
+
+        for byte in data:
+            crc = c_ushort((crc.value >> 8) | (crc.value << 8))
+            crc = c_ushort(crc.value ^ ord(byte))
+            crc = c_ushort(crc.value ^ (crc.value & 0xff) >> 4)
+            crc = c_ushort(crc.value ^ crc.value << 12)
+            crc = c_ushort(crc.value ^ (crc.value & 0xff) << 5)
+        return crc.value
     
     ##
     #   @brief Decodes a byte string in a readable hex string.
@@ -65,7 +85,7 @@ class EthernetMaster:
             else:
                 return self.__socket.send(packet)
         except socket.timeout:
-            print '\033[93m' + "Warning: Sending reached Timeout!" + '\033[0m'
+            print print_warning("Warning: Sending reached Timeout!")
     
     ##
     #   @brief Receives reply.
@@ -79,14 +99,14 @@ class EthernetMaster:
                 return self.__socket.recv(1024)
         except socket.timeout:
             if error_msg:
-                print '\033[93m' + "Warning: Receiving reached Timeout!" + '\033[0m'
+                print print_warning("Warning: Receiving reached Timeout!")
     
     ##
     #   @brief Creates the socket and bind it to the interface.
     #
     def set_socket(self):
         self.__socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, 
-                                      socket.htons(int(self.__ethertype,16)))
+                                      socket.htons(int(self.__ethertype, 16)))
         self.__socket.bind((self.__interface, 0))
     
     ##
