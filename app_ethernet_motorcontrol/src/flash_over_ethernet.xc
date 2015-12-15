@@ -22,8 +22,15 @@
 #include "crc.h"
 
 
-#define FIRMWARE_VERSION    "v2.0"
+#define FIRMWARE_VERSION    "v1.0"
+/*
+#ifndef FW_VERSION
+#define FW_VERSION  2.0
+#endif
 
+#define Stringize(x) #x
+#define Stringize_Value(x) Stringize(x)
+*/
 #define DEBUG
 
 #define PAGE_SIZE       256
@@ -215,7 +222,7 @@ int flash_write(char data[], chanend c_flash_data)
 int flash_addUpgradeImage(unsigned address, unsigned imageSize)
 {
     if (imageSize == 0)
-        return 1;
+        return 10;
 
     /* Write data. */
     unsigned char buf[PAGE_SIZE];
@@ -235,14 +242,16 @@ int flash_addUpgradeImage(unsigned address, unsigned imageSize)
     {
         /* Get a page of data. */
         if (fl_readDataPage(page, buf) != 0)
-            return 3;
+            return 13;
 
         // Wright page behind factory image
         if (fl_writeImagePage(buf) != 0)
-            return 4;
+            return 14;
 
+        /*
         // Verify page
         if (fl_readPage(address, checkBuf) == 0)
+        //if (fl_readImagePage(checkBuf) == 0)
         {
             for(int i=0; i < PAGE_SIZE; i++)
             {
@@ -253,14 +262,15 @@ int flash_addUpgradeImage(unsigned address, unsigned imageSize)
                     printhex(buf[i]);printchar(' ');
                     printhexln(checkBuf[i]);
                     #endif
-                    return 5;
+                    return 15;
                 }
             }
         }
         else
         {
-            return 6;
+            return 16;
         }
+        */
 
         address += PAGE_SIZE;
     }
@@ -282,6 +292,78 @@ static int getSectorAtOrAfter(unsigned address)
   return -1;
 }
 
+int flash_prepare_bii(fl_BootImageInfo &b, unsigned size, unsigned &add_not_replace)
+{
+    int val = 1;
+    // Prepare flash for adding or replacing image. Must be repeated until val is zero.
+    while (1)
+    {
+        if (add_not_replace)
+        {
+            printstrln("Add Image");
+            val = fl_startImageAdd(b, size, 0);
+        }
+        else
+        {
+            printstrln("Replace Image");
+            val = fl_startImageReplace(b, size);
+        }
+        if (val == 0)
+            break;
+        else if (val == 1)
+            printstr(".");
+        else
+            __builtin_unreachable();
+    }
+
+    if (val != 0)
+    {
+        fl_disconnect();
+    #ifdef DEBUG
+        if (add_not_replace)
+            printstr("Error: failed to start Image Add.\n");
+        else
+            printstr("Error: failed to start Image Replace.\n");
+    #endif
+        return 20;
+    }
+
+    return 0;
+}
+
+int flash_find_images(fl_BootImageInfo &b, unsigned size, unsigned &next_image)
+{
+    unsigned error = 0;
+    // Find factory image
+    if( 0 != fl_getFactoryImage(b) )
+    {
+#ifdef DEBUG
+        printstr("Error: Cannot locate factory boot image.\n");
+#endif
+        fl_disconnect();
+        return 21;
+    }
+#ifdef DEBUG
+    printstr("Factory Image Size: ");
+    printuint(b.size);
+    printstr(", Factory Image Addr: ");
+    printuint(b.startAddress);
+    printstr(", Factory Image Version: ");
+    printuint(b.version);
+    printstr(", Factory?: ");
+    printuintln(b.factory);
+#endif
+
+    // 1: No Image found, 0: Image found
+    next_image = fl_getNextBootImage(b);
+    error = flash_prepare_bii(b, size, next_image);
+
+    if (error)
+        return error;
+
+    return 0;
+}
+
 /**
  * @brief Flashes the firmware
  * @param SPI   The struct with the spi ports. Defined in the BSP *.inc file.
@@ -290,7 +372,7 @@ static int getSectorAtOrAfter(unsigned address)
  */
 int flash_firmware(fl_SPIPorts &SPI, unsigned size)
 {
-    fl_BootImageInfo b;
+    fl_BootImageInfo b, b1;
 
     // Connect to flash memory
     if (fl_connect(SPI) != 0)
@@ -309,67 +391,36 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
         return 2;
     }
 
-    // Find factory image
-    if( 0 != fl_getFactoryImage(b) )
+    unsigned add_not_replace;
+    int error_find = flash_find_images(b, size, add_not_replace);
+    if (error_find)
     {
-#ifdef DEBUG
-        printstr("Error: Cannot locate factory boot image.\n");
-#endif
         fl_disconnect();
-        return 3;
+        return error_find;
     }
-#ifdef DEBUG
-    printstr("Factory Image Size: ");
-    printuint(b.size);
-    printstr(", Factory Image Addr: ");
-    printuint(b.startAddress);
-    printstr(", Factory Image Version: ");
-    printuint(b.version);
-    printstr(", Factory?: ");
-    printuintln(b.factory);
-#endif
 
     // Calculate upgrade address (obsolete, only used in flash_addUpgradeImage for verifying)
     unsigned endAddressOfFactoryImage = b.startAddress + b.size;
     unsigned sectorNum = getSectorAtOrAfter(endAddressOfFactoryImage);
     unsigned upgradeAddress = fl_getSectorAddress(sectorNum);
 
-    int val = 1;
-
-    // Prepare flash for adding image. Must be repeated until val is zero.
-    while (1)
-    {
-        val = fl_startImageAdd(b, size, 0);
-        if (val == 0)
-            break;
-        else if (val == 1)
-            printstr(".");
-        else
-            __builtin_unreachable();
-    }
-
-    if (val != 0)
-    {
-#ifdef DEBUG
-        printstr("Error: failed to start Image add.\n");
-#endif
-        fl_disconnect();
-        return 4;
-    }
 
     // Very, very, very important delay! Reasons why we have to wait here are unknown
     delay_milliseconds(50);
     // Add image to boot partition
     int error_upgrade = flash_addUpgradeImage(upgradeAddress, size);
 
-    if (error_upgrade != 0)
+    if (error_upgrade)
     {
 #ifdef DEBUG
         printstr("Error: failed to add upgrade image.\n");
 #endif
         fl_disconnect();
-        return 10 + error_upgrade;
+        return error_upgrade;
     }
+
+    if (!add_not_replace)
+        fl_getFactoryImage(b);
 
     // Find new image
     if (fl_getNextBootImage(b) != 0)
@@ -378,7 +429,7 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
         printstr("Error: failed to locate next boot image.\n");
 #endif
         fl_disconnect();
-        return 5;
+        return 3;
     }
 #ifdef DEBUG
     printstr("Next Image Size: ");
@@ -408,7 +459,7 @@ int flash_firmware(fl_SPIPorts &SPI, unsigned size)
 void flash_filter(char data[], chanend c_flash_data, int nbytes, client interface if_tx tx)
 {
     int reply;
-    char version[] = FIRMWARE_VERSION;
+    char version[] = FIRMWARE_VERSION;//Stringize_Value(FW_VERSION);
 
     if (isForMe(data, MAC_INPUT) && isSNCN(data))
     {
@@ -427,7 +478,8 @@ void flash_filter(char data[], chanend c_flash_data, int nbytes, client interfac
                     tx.msg(data, 20);
                     break;
                 case CMD_GETVERSION:
-                    memcpy((data + OFFSET_PAYLOAD), version, 5);
+                    //printstrln(version);
+                    memcpy((data + OFFSET_PAYLOAD), version, strlen(version));
                     //printstrln("Send version");
                     tx.msg(data, 20);
                     break;

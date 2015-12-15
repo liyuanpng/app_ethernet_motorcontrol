@@ -25,9 +25,12 @@ class FirmwareUpdate(EthernetMaster):
         self.__found_nodes = []
         self.__thread_progress = 0
 
-    def open_file_to_read(self):
+    def open_file_to_read(self, file_name=None):
         try:
-            self.__file_handler = open(self.__filename, "rb")
+            if file_name:
+                self.__file_handler = open(file_name, "rb")
+            else:
+                self.__file_handler = open(self.__filename, "rb")
         except IOError as e:
             print print_fail("Error: Opening file({0}): {1}".format(e.errno, e.strerror))
 
@@ -55,8 +58,11 @@ class FirmwareUpdate(EthernetMaster):
         except IOError as e:
             print print_fail("Error: writing file ({0}): {1}".format(e.errno, e.strerror))
 
-    def get_file_size(self):
-        return os.path.getsize(self.__filename)
+    def get_file_size(self, node=None):
+        if node:
+            return os.path.getsize(self.__filename + '_%s' % node)
+        else:
+            return os.path.getsize(self.__filename)
 
     def scan_slaves(self):
         """
@@ -93,8 +99,9 @@ class FirmwareUpdate(EthernetMaster):
 
     def __read_image(self, node):
         image_page_array = []
-        self.__filename += '_%s' % node
-        self.open_file_to_read()
+        file_name = self.__filename + '_%s' % node
+        print file_name
+        self.open_file_to_read(file_name)
         while True:
             chunk = self.read_file(PACKAGE_SIZE)
             if chunk:
@@ -159,7 +166,7 @@ class FirmwareUpdate(EthernetMaster):
         for t in threads:
             t.join()
 
-        if FlashFirmware.thread_count.thread_count == 0:
+        if FlashFirmware.thread_count == 0:
             print "Alle Threads tot"
         else:
             print "Da lebt noch was..."
@@ -171,8 +178,8 @@ class FirmwareUpdate(EthernetMaster):
         @return: True if sending was successful, otherwise false
         """
         print "Update Firmware from %s nodes\n" % len(nodes)
-        size = self.get_file_size()
-        print "Send file with %s bytes:\n" % size
+
+        #print "Send file with %s bytes:\n" % size
         print "Sending..."
 
         threads = []
@@ -180,6 +187,8 @@ class FirmwareUpdate(EthernetMaster):
         print "Start Threads"
 
         for node in nodes:
+            size = self.get_file_size(node)
+            print size
             image = self.__read_image(node)
             address = dst_addresses[node - 1]
             t = SendImage(image, address, size, lock)
@@ -189,6 +198,11 @@ class FirmwareUpdate(EthernetMaster):
         print "Wait until every thread is terminated"
 
         print "%s threads are running" % SendImage.thread_count
+
+        prog_bar = ProgressBar(256*len(nodes))
+        prog_bar.start()
+        prog_bar.join()
+
         success = True
         for t in threads:
             t.join()
@@ -244,26 +258,27 @@ def main():
 
     fm = FirmwareUpdate(ifname, args.filepath if args.filepath else '')
     fm.set_socket()
+    try:
+        if args.filepath:
 
-    if args.filepath:
+            fm.set_timeout(500)
 
-        fm.set_timeout(500)
+            if args.all:
+                if fm.send_images([1, 6]):
+                    fm.flash_firmware([1, 6])
+            else:
+                if fm.send_images([args.node]):
+                    fm.flash_firmware([args.node])
 
-        if args.all:
-            if fm.send_images([1, 6]):
-                fm.flash_firmware([1, 6])
-        else:
-            if fm.send_images([args.node]):
-                fm.flash_firmware(args.node)
+        if args.v:
+            fm.set_timeout(5)
+            fm.get_firmware_version(args.node)
 
-    if args.v:
-        fm.set_timeout(5)
-        fm.get_firmware_version(args.node)
-
-    if args.scan:
-        fm.set_timeout(0.5)
-        fm.scan_slaves()
-
+        if args.scan:
+            fm.set_timeout(0.5)
+            fm.scan_slaves()
+    except (KeyboardInterrupt, SystemExit):
+        raise
 
 if __name__ == '__main__':
     main()

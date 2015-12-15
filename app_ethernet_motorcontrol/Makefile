@@ -16,7 +16,7 @@ USED_MODULES = config module_adc module_ams_rotary_sensor module_blocks module_b
 # XCC_XC_FLAGS, XCC_C_FLAGS, XCC_ASM_FLAGS, XCC_CPP_FLAGS
 # If the variable XCC_MAP_FLAGS is set it overrides the flags passed to
 # xcc for the final link (mapping) stage. -report
-XCC_FLAGS_Debug = -O0 -g -fxscope -DUSE_XSCOPE  -lflash -report
+XCC_FLAGS_Debug = -O0 -g -fxscope -DUSE_XSCOPE  -lflash -report -D NODE=1 -DFW_VERSION=1.0
 XCC_FLAGS_Release = -O3 -fxscope -lflash
 
 # The VERBOSE variable, if set to 1, enables verbose output from the make system.

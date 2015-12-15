@@ -6,6 +6,19 @@ from ethernet_settings import *
 from print_color import *
 
 
+class ProgressBar(threading.Thread):
+    def __init__(self, max_val):
+        threading.Thread.__init__(self)
+        self.max_val = max_val
+
+    def run(self):
+        progress = 0
+        while progress < self.max_val:
+            progress = SendImage.progress
+            sys.stdout.write("\r[%-50s] %d%%" % ('=' * ((progress * 50) / self.max_val), ((progress * 100) / self.max_val)))
+            sys.stdout.flush()
+
+
 class SendImage(threading.Thread, EthernetMaster):
     thread_count = 0
     progress = 0
@@ -23,13 +36,14 @@ class SendImage(threading.Thread, EthernetMaster):
         self.lock.acquire()
         SendImage.thread_count += 1
         self.lock.release()
-        print "Start %s" % self.mac_address
+        #print "Start %s" % self.mac_address
         protocol_data = "%02X%02X" % (CMD_PRE, CMD_WRITE) + "%08X" % self.size
         page_index = 0
         self.set_socket()
+        self.set_timeout(5)
 
         for page in self.image:
-            print "%s sends..." % self.mac_address[-2:]
+            #print "%s sends..." % self.mac_address[-2:]
             #print "Page: %s" % page
             reply = NACK
 
@@ -49,9 +63,15 @@ class SendImage(threading.Thread, EthernetMaster):
                     reply = bytearray(reply_bytes)[OFFSET_PAYLOAD]
                     if reply != ACK and reply != ERR_CRC:
                         sys.stdout.write(print_fail("\n\tERROR: Sending image"))
+                        self.lock.acquire()
+                        SendImage.thread_count -= 1
+                        self.lock.release()
                         return False
                 else:
                     print print_fail("\tERROR: No Reply")
+                    self.lock.acquire()
+                    SendImage.thread_count -= 1
+                    self.lock.release()
                     return False
             self.lock.acquire()
             SendImage.progress += 1
@@ -62,7 +82,6 @@ class SendImage(threading.Thread, EthernetMaster):
         self.lock.acquire()
         SendImage.thread_count -= 1
         self.lock.release()
-        #return True
         self.success = True
 
 
@@ -77,7 +96,6 @@ class FlashFirmware(threading.Thread, EthernetMaster):
         self.success = False
 
     def run(self):
-            #def flash_firmware(self, node):
         """
         @note: Sends a request for a firmware update. That request starts the upgrade process.
         @param node: Node number, to which the upgrade image will be send.
@@ -87,13 +105,15 @@ class FlashFirmware(threading.Thread, EthernetMaster):
         self.lock.release()
         protocol_data = "%02X%02X" % (CMD_PRE, CMD_FLASH)
         self.set_socket()
+        self.set_timeout(5)
 
         self.send(self.mac_address, protocol_data)
-
-        reply = self.receive()
+        try:
+            reply = self.receive()
+        except:
+            print "Timeout"
 
         if reply:
-            # Convert Byte into Int
             error = bytearray(reply)[OFFSET_PAYLOAD]
             if error == 0:
                 print print_ok("\n\tFlashing successfully finished!\n")

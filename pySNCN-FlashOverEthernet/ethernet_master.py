@@ -115,6 +115,3 @@ class EthernetMaster:
     def set_timeout(self, time):
         if self.__socket:
             self.__socket.settimeout(time)
-
-    def socket_accept(self):
-        return self.__socket.accept()
