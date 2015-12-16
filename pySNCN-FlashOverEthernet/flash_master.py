@@ -70,18 +70,21 @@ class FirmwareUpdate(EthernetMaster):
         """
         print "\nScanning devices..."
         nodes = len(dst_addresses)
-        for node in range(nodes):
-            self.__progress_bar(node, nodes)
-            protocol_data = "%02X%02X" % (CMD_PRE, CMD_VERSION)
-            address = dst_addresses[node]
+        #prog_bar = ProgressBar(nodes, ScanNodes)
+        #prog_bar.start()
+        #prog_bar.join()
+        threads = []
+        for node in dst_addresses:
+            t = ScanNodes(node)
+            threads.append(t)
+            t.start()
 
-            self.send(address, protocol_data)
-            reply = self.receive(error_msg=False)
+        for t in threads:
+            t.join()
+            if t.found:
+                self.__found_nodes.append(t.found)
 
-            if reply:
-                self.__found_nodes.append(address)
-
-        self.__progress_bar(nodes, nodes)
+        #self.__progress_bar(nodes, nodes)
         found = len(self.__found_nodes)
         print "\n...done"
         print "Found %d node%s:" % (found, 's' if found > 1 else '')
@@ -143,7 +146,8 @@ class FirmwareUpdate(EthernetMaster):
                 return
         print "All data received"
 
-    def flash_firmware(self, nodes):
+    @staticmethod
+    def flash_firmware(nodes):
         """
         @note: Sends a request for a firmware update. That request starts the upgrade process.
         @param nodes: Node number, to which the upgrade image will be send.
@@ -184,7 +188,7 @@ class FirmwareUpdate(EthernetMaster):
 
         threads = []
         lock = threading.Lock()
-        print "Start Threads"
+        #print "Start Threads"
 
         for node in nodes:
             size = self.get_file_size(node)
@@ -195,11 +199,11 @@ class FirmwareUpdate(EthernetMaster):
             threads.append(t)
             t.start()
 
-        print "Wait until every thread is terminated"
+        #print "Wait until every thread is terminated"
 
-        print "%s threads are running" % SendImage.thread_count
+        #print "%s threads are running" % SendImage.thread_count
 
-        prog_bar = ProgressBar(256*len(nodes))
+        prog_bar = ProgressBar(256*len(nodes), SendImage)
         prog_bar.start()
         prog_bar.join()
 
@@ -208,14 +212,10 @@ class FirmwareUpdate(EthernetMaster):
             t.join()
             success &= t.success
 
-        if SendImage.thread_count == 0:
-            print "Every thread is dead"
-        else:
+        if SendImage.thread_count > 0:
             print "There is something still living..."
 
         return success
-
-            #self.__progress_bar(page, size / PACKAGE_SIZE)
 
     def get_firmware_version(self, node):
         """
@@ -241,9 +241,9 @@ class FirmwareUpdate(EthernetMaster):
 def main():
     parser = argparse.ArgumentParser(description='Synapticon SOMANET Firmware Update over Ethernet')
     parser.add_argument('interface', help='Network interface')
-    parser.add_argument('-u', help='Firmware file path', dest='filepath')
+    parser.add_argument('-u', default=None, help='Firmware upgrade option, followed by the image path', dest='filepath')
     parser.add_argument('-n', type=int, help='Node number', dest='node')
-    parser.add_argument('-v', action='store_true')
+    parser.add_argument('-v', action='store_true', help='Gets the firmware version of the specified node.', dest='version')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-s', type=int, help='Specify serial number (IP address?) for the ethernet slave', dest='serial')
@@ -256,7 +256,7 @@ def main():
 
     ifname = args.interface
 
-    fm = FirmwareUpdate(ifname, args.filepath if args.filepath else '')
+    fm = FirmwareUpdate(ifname, args.filepath)
     fm.set_socket()
     try:
         if args.filepath:
@@ -270,7 +270,7 @@ def main():
                 if fm.send_images([args.node]):
                     fm.flash_firmware([args.node])
 
-        if args.v:
+        if args.version:
             fm.set_timeout(5)
             fm.get_firmware_version(args.node)
 
