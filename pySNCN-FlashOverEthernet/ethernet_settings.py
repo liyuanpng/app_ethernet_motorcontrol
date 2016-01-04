@@ -43,6 +43,9 @@ dst_addresses = ["F0:CA:F0:CA:F0:01",
                  "F0:CA:F0:CA:F0:2A",
                  "F0:CA:F0:CA:F0:2B",
                  "F0:CA:F0:CA:F0:2C"]
+
+broadcast = "FF:FF:FF:FF:FF:FF"
+#broadcast = "F0:CA:F0:CA:F0:CA"
              
 # Interface name, only on Linux.           
 interface = "eth0"
@@ -52,6 +55,7 @@ ethertype = "0801"
 PACKAGE_SIZE    = 256
 OFFSET_DATA     = 22
 OFFSET_PAYLOAD  = 14
+OFFSET_SRC_MAC  = 6
 ERR_CRC         = 0xFC
 ACK             = 0xFF
 NACK            = 0x0

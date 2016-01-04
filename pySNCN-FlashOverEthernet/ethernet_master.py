@@ -7,11 +7,12 @@ from print_color import *
 
 
 class EthernetMaster:
-    def __init__(self, interface, ethertype):
+    def __init__(self, interface, ethertype, id):
         self.__interface = interface
         self.__ethertype = ethertype
         self.__socket = None
         self.__src_addr  = self.__getHwAddr(self.__interface)
+        self.__process_id = id
 
     ##
     #   @brief Gets the MAC address from the interface. Works only on linux.
@@ -107,7 +108,7 @@ class EthernetMaster:
     def set_socket(self):
         self.__socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, 
                                       socket.htons(int(self.__ethertype, 16)))
-        self.__socket.bind((self.__interface, 0))
+        self.__socket.bind((self.__interface, 50000 + self.__process_id))
     
     ##
     #   @brief Sets the timeout for the socket.

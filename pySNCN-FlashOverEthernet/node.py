@@ -24,11 +24,10 @@ class ScanNodes(threading.Thread, EthernetMaster):
     thread_count = 0
     progress = 0
 
-    def __init__(self, address, port):
+    def __init__(self, address, proc_id):
         threading.Thread.__init__(self)
-        EthernetMaster.__init__(self, interface, ethertype)
+        EthernetMaster.__init__(self, interface, ethertype, proc_id)
         self.address = address
-        self.address = port
         self.found = None
 
     def run(self):
@@ -52,9 +51,9 @@ class SendImage(threading.Thread, EthernetMaster):
     thread_count = 0
     progress = 0
 
-    def __init__(self, data, mac_address, size, lock):
+    def __init__(self, data, mac_address, size, lock, proc_id):
         threading.Thread.__init__(self)
-        EthernetMaster.__init__(self, interface, ethertype)
+        EthernetMaster.__init__(self, interface, ethertype, proc_id)
         self.size = size
         self.image = data
         self.mac_address = mac_address
@@ -74,6 +73,7 @@ class SendImage(threading.Thread, EthernetMaster):
         self.lock.release()
 
 
+    @property
     def run(self):
         self.thread_counter(1)
         #print "Start %s" % self.mac_address
@@ -120,9 +120,9 @@ class SendImage(threading.Thread, EthernetMaster):
 class FlashFirmware(threading.Thread, EthernetMaster):
     thread_count = 0
 
-    def __init__(self, mac_address, lock):
+    def __init__(self, mac_address, lock, proc_id):
         threading.Thread.__init__(self)
-        EthernetMaster.__init__(self, interface, ethertype)
+        EthernetMaster.__init__(self, interface, ethertype, proc_id)
         self.mac_address = mac_address
         self.lock = lock
         self.success = False

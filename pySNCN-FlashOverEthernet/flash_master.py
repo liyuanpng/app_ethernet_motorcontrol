@@ -7,6 +7,7 @@
 
 import argparse
 import os
+import time
 import sys
 from ctypes import c_ushort
 import threading
@@ -19,7 +20,7 @@ from print_color import *
 
 class FirmwareUpdate(EthernetMaster):
     def __init__(self, iface, filename=''):
-        EthernetMaster.__init__(self, iface, ethertype)
+        EthernetMaster.__init__(self, iface, ethertype, 0)
         self.__filename = filename
         self.__file_handler = None
         self.__found_nodes = []
@@ -73,22 +74,29 @@ class FirmwareUpdate(EthernetMaster):
         #prog_bar = ProgressBar(nodes, ScanNodes)
         #prog_bar.start()
         #prog_bar.join()
-        threads = []
-        for node in dst_addresses:
-            t = ScanNodes(node)
-            threads.append(t)
-            t.start()
+        reply = None
+        self.set_socket()
+        self.set_timeout(10)
 
-        for t in threads:
-            t.join()
-            if t.found:
-                self.__found_nodes.append(t.found)
+        protocol_data = "%02X%02X" % (CMD_PRE, CMD_VERSION)
+        self.send(broadcast, protocol_data)
+        t_start = time.time()
+        # Search 10 seconds
+        found_nodes = []
+        while (time.time() - t_start) < 10:
+            reply = self.receive(error_msg=False)
+
+            if reply:
+                answer = reply.encode('hex')
+                sys.stdout.write("found node " + answer[OFFSET_SRC_MAC:OFFSET_SRC_MAC+6] + "\n\n")
+                sys.stdout.flush()
+                found_nodes = answer[OFFSET_SRC_MAC:OFFSET_SRC_MAC+6]
 
         #self.__progress_bar(nodes, nodes)
-        found = len(self.__found_nodes)
+        found = len(found_nodes)
         print "\n...done"
         print "Found %d node%s:" % (found, 's' if found > 1 else '')
-        print self.__found_nodes
+        print found_nodes
 
     @staticmethod
     def __progress_bar(progress, max_val):
