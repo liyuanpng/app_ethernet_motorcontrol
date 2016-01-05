@@ -45,8 +45,7 @@ dst_addresses = ["F0:CA:F0:CA:F0:01",
                  "F0:CA:F0:CA:F0:2C"]
 
 broadcast = "FF:FF:FF:FF:FF:FF"
-#broadcast = "F0:CA:F0:CA:F0:CA"
-             
+
 # Interface name, only on Linux.           
 interface = "eth0"
 # Ethertype are byte 13 and 14 in the ethernet packet

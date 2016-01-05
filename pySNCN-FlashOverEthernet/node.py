@@ -20,57 +20,31 @@ class ProgressBar(threading.Thread):
             sys.stdout.flush()
 
 
-class ScanNodes(threading.Thread, EthernetMaster):
-    thread_count = 0
-    progress = 0
-
-    def __init__(self, address, proc_id):
-        threading.Thread.__init__(self)
-        EthernetMaster.__init__(self, interface, ethertype, proc_id)
-        self.address = address
-        self.found = None
-
-    def run(self):
-        print "searching", self.address
-        reply = None
-        self.set_socket()
-        self.set_timeout(5)
-
-        protocol_data = "%02X%02X" % (CMD_PRE, CMD_VERSION)
-        self.send(self.address, protocol_data)
-        reply = self.receive(error_msg=False)
-
-        if reply:
-            answer = reply.encode('hex')
-            sys.stdout.write("found node " + self.address + " --- " + answer + "\n\n")
-            sys.stdout.flush()
-            self.found = self.address
-
-
 class SendImage(threading.Thread, EthernetMaster):
     thread_count = 0
     progress = 0
 
-    def __init__(self, data, mac_address, size, lock, proc_id):
+    def __init__(self, data, mac_address, size, lock):
         threading.Thread.__init__(self)
-        EthernetMaster.__init__(self, interface, ethertype, proc_id)
+        EthernetMaster.__init__(self, interface, ethertype)
         self.size = size
         self.image = data
         self.mac_address = mac_address
         self.lock = lock
         self.success = False
 
-    @staticmethod
     def thread_counter(self, num):
         self.lock.acquire()
         SendImage.thread_count += num
         self.lock.release()
 
-    @staticmethod
     def progress_counter(self, num):
         self.lock.acquire()
         SendImage.progress += num
         self.lock.release()
+
+    def is_for_me(self, packet):
+        return packet[OFFSET_SRC_MAC:OFFSET_SRC_MAC + 6].encode('hex') == self.mac_address.replace(":", "")
 
 
     @property
@@ -95,11 +69,11 @@ class SendImage(threading.Thread, EthernetMaster):
 
             # While the reply is not ACK, try to send the package again. Reason should only be a CRC error.
             while reply != ACK:
-                send = self.send(self.mac_address, payload)
+                self.send(self.mac_address, payload)
 
                 reply_bytes = self.receive()
 
-                if reply_bytes:
+                if reply_bytes and self.is_for_me(reply_bytes):
                     reply = bytearray(reply_bytes)[OFFSET_PAYLOAD]
                     if reply != ACK and reply != ERR_CRC:
                         sys.stdout.write(print_fail("\n\tERROR: Sending image"))
@@ -120,14 +94,13 @@ class SendImage(threading.Thread, EthernetMaster):
 class FlashFirmware(threading.Thread, EthernetMaster):
     thread_count = 0
 
-    def __init__(self, mac_address, lock, proc_id):
+    def __init__(self, mac_address, lock):
         threading.Thread.__init__(self)
-        EthernetMaster.__init__(self, interface, ethertype, proc_id)
+        EthernetMaster.__init__(self, interface, ethertype)
         self.mac_address = mac_address
         self.lock = lock
         self.success = False
 
-    @staticmethod
     def thread_counter(self, num):
         self.lock.acquire()
         FlashFirmware.thread_count += num
@@ -144,10 +117,7 @@ class FlashFirmware(threading.Thread, EthernetMaster):
         self.set_timeout(5)
 
         self.send(self.mac_address, protocol_data)
-        try:
-            reply = self.receive()
-        except:
-            print "Timeout"
+        reply = self.receive()
 
         if reply:
             error = bytearray(reply)[OFFSET_PAYLOAD]
