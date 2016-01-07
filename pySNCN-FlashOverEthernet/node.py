@@ -46,8 +46,6 @@ class SendImage(threading.Thread, EthernetMaster):
     def is_for_me(self, packet):
         return packet[OFFSET_SRC_MAC:OFFSET_SRC_MAC + 6].encode('hex') == self.mac_address.replace(":", "")
 
-
-    @property
     def run(self):
         self.thread_counter(1)
         #print "Start %s" % self.mac_address
@@ -78,17 +76,18 @@ class SendImage(threading.Thread, EthernetMaster):
                     if reply != ACK and reply != ERR_CRC:
                         sys.stdout.write(print_fail("\n\tERROR: Sending image"))
                         self.thread_counter(-1)
-                        return False
+                        self.success = False
+                        return
                 else:
                     print print_fail("\tERROR: No Reply")
                     self.thread_counter(-1)
-                    return False
+                    self.success = False
+                    return
             self.progress_counter(1)
 
         sys.stdout.write("\n\n")
-        #print "Thread terminieren..."
-        self.thread_counter(-1)
         self.success = True
+        self.thread_counter(-1)
 
 
 class FlashFirmware(threading.Thread, EthernetMaster):

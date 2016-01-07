@@ -97,17 +97,12 @@ class FirmwareUpdate(EthernetMaster):
         print '\n'.join(':'.join(a+b for a, b in zip(adr[::2], adr[1::2])) for adr in self.__found_nodes)
         return self.__found_nodes
 
-    @staticmethod
-    def __progress_bar(progress, max_val):
-        """
-        @note: Calculates and shows a progress bar.
-        @param progress: The actual progress
-        @param max_val: The maximum
-        """
-        sys.stdout.write("\r[%-50s] %d%%" % ('=' * ((progress * 50) / max_val), ((progress * 100) / max_val)))
-        sys.stdout.flush()
-
     def __read_image(self, file_name):
+        """
+        @note: Reads on image and returns it as an array.
+        @param file_name: File name of the image
+        @return: Image array. One entry is one page.
+        """
         image_page_array = []
         print file_name
         self.open_file_to_read(file_name)
@@ -121,6 +116,11 @@ class FirmwareUpdate(EthernetMaster):
         return image_page_array
 
     def read_images(self, nodes):
+        """
+        @note: Reads n images. Name must be file_name_n.
+        @param nodes: Node numbers
+        @return: array of array of images.
+        """
         images_array = []
 
         if len(nodes) == 1:
@@ -133,43 +133,11 @@ class FirmwareUpdate(EthernetMaster):
 
         return images_array
 
-    def receive_data(self, node, size):
-        """
-        @note: Receives data from the node and stores them in a data. (Obsolete, used only for debugging)
-        @param node: Node number, to which the upgrade image will be send.
-        @param size: Size of the data, that will be received.
-        """
-        rest_size = size
-        print "Receive file with %s bytes." % size
-
-        protocol_data = "%02X%02X" % (CMD_PRE, CMD_READ) + "%08X" % size
-        print protocol_data
-        address = dst_addresses[node - 1]
-        print address
-        page = 0
-
-        self.open_file_to_write('receive_file')
-
-        while rest_size:
-            payload = protocol_data + "%04X" % page
-            page += 1
-            self.send(address, payload)
-
-            reply = self.receive()
-
-            if reply:
-                self.write_file(reply[OFFSET_DATA:OFFSET_DATA + PACKAGE_SIZE])
-                rest_size -= PACKAGE_SIZE
-            else:
-                print print_fail("Error: Receiving data")
-                return
-        print "All data received"
-
     @staticmethod
     def flash_firmware(addresses):
         """
         @note: Sends a request for a firmware update. That request starts the upgrade process.
-        @param nodes: Node number, to which the upgrade image will be send.
+        @param addresses: Mac addresses of the nodes.
         """
         print "Flash Firmware..."
 
@@ -193,10 +161,12 @@ class FirmwareUpdate(EthernetMaster):
         else:
             print "Da lebt noch was..."
 
-    def send_images(self, addresses, images):
+    @staticmethod
+    def send_images(addresses, images):
         """
         @note: Sends an upgrade image to a node.
-        @param nodes: Node number, to which the upgrade image will be send.
+        @param addresses: Mac addresses of the nodes.
+        @param images: Array of images.
         @return: True if sending was successful, otherwise false
         """
 
@@ -209,7 +179,7 @@ class FirmwareUpdate(EthernetMaster):
         lock = threading.Lock()
         #print "Start Threads"
         if len(addresses) != len(images):
-            print 'Error: Not enough address or files'
+            print 'Error: Not enough addresses or files'
             return -1
 
         for address, image in zip(addresses, images):
@@ -218,10 +188,6 @@ class FirmwareUpdate(EthernetMaster):
             t = SendImage(image, address, size, lock)
             threads.append(t)
             t.start()
-
-        #print "Wait until every thread is terminated"
-
-        #print "%s threads are running" % SendImage.thread_count
 
         prog_bar = ProgressBar(256*len(addresses), SendImage)
         prog_bar.start()
@@ -235,12 +201,13 @@ class FirmwareUpdate(EthernetMaster):
         if SendImage.thread_count > 0:
             print "There is something still living..."
 
+        print '...done'
         return success
 
     def get_firmware_version(self, addresses):
         """
         @note: Sends a request to a node, to get the firmware version.
-        @param node: Node number, to which the request will be send.
+        @param addresses: Mac addresses of the nodes.
         """
         sys.stdout.write("Get Firmware Version from node ")
 
@@ -280,22 +247,29 @@ def main():
     fm = FirmwareUpdate(ifname, args.filepath)
     fm.set_socket()
     try:
+        # Update mode
         if args.filepath:
 
             fm.set_timeout(5)
-
+            address = None
+            # If node number is commited, get address from the list defined in the settings.
             if args.node:
                 address = dst_addresses[args.node-1]
+            # If switch all is turned on, get all addresses from the list, or scan the for nodes.
             elif args.all:
                 if dst_addresses:
                     address = dst_addresses
                 else:
                     address = fm.scan_slaves()
+            # Scan for nodes
             elif args.scan:
                 address = fm.scan_slaves()
 
+            # Read images
             images = fm.read_images(address)
+            # Send images
             if fm.send_images(address, images):
+                # Flash images
                 fm.flash_firmware(address)
 
         elif args.version:
